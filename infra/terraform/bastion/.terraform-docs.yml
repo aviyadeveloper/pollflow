@@ -1,0 +1,105 @@
+formatter: "markdown table"
+
+version: ""
+
+header-from: main.tf
+footer-from: ""
+
+recursive:
+  enabled: false
+
+sections:
+  hide: []
+  show:
+    - header
+    - requirements
+    - providers
+    - modules
+    - resources
+    - inputs
+    - outputs
+
+content: |-
+  {{ .Header }}
+
+  ## Features
+
+  - Ubuntu 24.04 LTS bastion host in public subnet
+  - Automatic SSH key pair generation with RSA 4096-bit encryption
+  - Security group with SSH access (port 22)
+  - Elastic IP for persistent public IP address
+  - Private key stored locally with secure permissions (0400)
+  - Ready-to-use SSH command output
+
+  ## Usage
+
+  ```hcl
+  module "bastion" {
+    source = "./bastion"
+
+    project_name = "cloudpollpro"
+    vpc_id       = module.vpc.vpc_id
+    subnet_id    = module.vpc.public_subnets[0]
+
+    # Optional: customize instance type
+    instance_type = "t3.micro"
+
+    # Optional: change keys storage path
+    keys_path = ".keys"
+  }
+  ```
+
+  ## Connecting to the Bastion
+
+  After applying, connect using the output command:
+
+  ```bash
+  # Get the SSH command
+  terraform output -raw bastion_ssh_command
+
+  # Or use the Makefile target from the root
+  make bastion-ssh
+  ```
+
+  {{ .Requirements }}
+
+  {{ .Providers }}
+
+  {{ .Modules }}
+
+  {{ .Resources }}
+
+  {{ .Inputs }}
+
+  {{ .Outputs }}
+
+output:
+  file: "README.md"
+  mode: inject
+  template: |-
+    <!-- BEGIN_TF_DOCS -->
+    {{ .Content }}
+    <!-- END_TF_DOCS -->
+
+output-values:
+  enabled: false
+  from: ""
+
+sort:
+  enabled: true
+  by: name
+
+settings:
+  anchor: true
+  color: true
+  default: true
+  description: false
+  escape: true
+  hide-empty: false
+  html: true
+  indent: 2
+  lockfile: true
+  read-comments: true
+  required: true
+  sensitive: true
+  type: true

@@ -13,3 +13,12 @@ module "vpc" {
     ManagedBy = "terraform"
   }
 }
+
+module "bastion" {
+  source = "./bastion"
+
+  project_name  = var.project_name
+  vpc_id        = module.vpc.vpc_id
+  subnet_id     = module.vpc.public_subnets[0]
+  instance_type = "t3.micro"
+}

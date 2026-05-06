@@ -14,3 +14,29 @@ output "vpc_private_subnets" {
   value       = module.vpc.private_subnets
 }
 
+
+# Bastion Outputs
+output "bastion_ssh_command" {
+  description = "Ready-to-use SSH command to connect to bastion (just copy and paste!)"
+  value       = module.bastion.ssh_command
+}
+
+output "bastion_public_ip" {
+  description = "Public IP address of the bastion host"
+  value       = module.bastion.bastion_public_ip
+}
+
+output "bastion_key_location" {
+  description = "Location of the private SSH key"
+  value       = module.bastion.private_key_path
+}
+
+output "bastion_instance_id" {
+  description = "Instance ID of the bastion host"
+  value       = module.bastion.bastion_instance_id
+}
+
+output "bastion_connection_details" {
+  description = "Complete connection details for the bastion host"
+  value       = module.bastion.connection_details
+}
