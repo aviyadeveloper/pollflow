@@ -57,14 +57,17 @@ resource "aws_iam_role_policy" "s3_policy" {
           "s3:DeleteObject"
         ]
         Resource = [
-          "arn:aws:s3:::${var.project_name}-*",
-          "arn:aws:s3:::${var.project_name}-*/*"
+          "arn:aws:s3:::cloudpollpro*",
+          "arn:aws:s3:::cloudpollpro*/*"
         ]
       }
     ]
   })
 }
 
+############################################
+# Managed Policy Attachments
+############################################
 
 # ECR - Container registry management
 resource "aws_iam_role_policy_attachment" "ecr_full_access" {
@@ -72,16 +75,10 @@ resource "aws_iam_role_policy_attachment" "ecr_full_access" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess"
 }
 
-# EC2 Full Access - Covers VPC, Security Groups, EC2 Instances, and all networking
+# EC2 Full Access - VPC, Security Groups, EC2 Instances, networking
 resource "aws_iam_role_policy_attachment" "ec2_full_access" {
   role       = aws_iam_role.project_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2FullAccess"
-}
-
-# EKS - Cluster management
-resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
-  role       = aws_iam_role.project_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
 }
 
 # Auto Scaling - For EKS node groups
@@ -96,9 +93,30 @@ resource "aws_iam_role_policy_attachment" "elb_full_access" {
   policy_arn = "arn:aws:iam::aws:policy/ElasticLoadBalancingFullAccess"
 }
 
-# IAM - Limited IAM role management (for EC2/EKS instance profiles, service accounts, OIDC providers)
-# Custom policy because IAMFullAccess is too broad
-resource "aws_iam_role_policy" "iam_role_policy" {
+# CloudWatch Logs - For EKS logging
+resource "aws_iam_role_policy_attachment" "cloudwatch_logs_full_access" {
+  role       = aws_iam_role.project_role.name
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
+}
+
+# KMS - For EKS encryption
+resource "aws_iam_role_policy_attachment" "kms_power_user" {
+  role       = aws_iam_role.project_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSKeyManagementServicePowerUser"
+}
+
+# SSM - For reading EKS AMI parameters
+resource "aws_iam_role_policy_attachment" "ssm_readonly" {
+  role       = aws_iam_role.project_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess"
+}
+
+############################################
+# Custom Policies (no suitable managed policy exists)
+############################################
+
+# IAM - Scoped to project resources only
+resource "aws_iam_role_policy" "iam_role_management" {
   name = "IAMRoleManagement"
   role = aws_iam_role.project_role.name
 
@@ -138,13 +156,45 @@ resource "aws_iam_role_policy" "iam_role_policy" {
           "iam:TagOpenIDConnectProvider",
           "iam:DeleteOpenIDConnectProvider",
           "iam:ListOpenIDConnectProviders",
-          "iam:CreateServiceLinkedRole"
+          "iam:CreateServiceLinkedRole",
+          "iam:GetPolicy",
+          "iam:GetPolicyVersion",
+          "iam:ListPolicies",
+          "iam:CreatePolicy",
+          "iam:DeletePolicy",
+          "iam:TagPolicy",
+          "iam:UntagPolicy",
+          "iam:ListPolicyVersions"
         ]
         Resource = [
-          "arn:aws:iam::*:role/${var.project_name}-*",
-          "arn:aws:iam::*:instance-profile/${var.project_name}-*",
-          "arn:aws:iam::*:oidc-provider/*"
+          "arn:aws:iam::*:role/cloudpollpro*",
+          "arn:aws:iam::*:role/projects/cloudpollpro*",
+          "arn:aws:iam::*:role/aws-service-role/*",
+          "arn:aws:iam::*:instance-profile/cloudpollpro*",
+          "arn:aws:iam::*:policy/cloudpollpro*",
+          "arn:aws:iam::*:oidc-provider/*",
+          "arn:aws:iam::aws:policy/*"
         ]
+      }
+    ]
+  })
+}
+
+# EKS - Full EKS operations (no suitable managed policy for cluster creation)
+resource "aws_iam_role_policy" "eks_admin" {
+  name = "EKSAdminAccess"
+  role = aws_iam_role.project_role.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "EKSFullAccess"
+        Effect = "Allow"
+        Action = [
+          "eks:*"
+        ]
+        Resource = "*"
       }
     ]
   })

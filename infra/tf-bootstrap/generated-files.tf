@@ -21,7 +21,7 @@ terraform {
 }
 EOT
 
-  file_permission = "0644"
+  file_permission = "0444"
 }
 
 resource "local_file" "provider_config" {
@@ -37,7 +37,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.0"
+      version = ">= 6.28.0"
     }
   }
 }
@@ -60,7 +60,7 @@ provider "aws" {
 }
 EOT
 
-  file_permission = "0644"
+  file_permission = "0444"
 }
 
 resource "local_file" "setup_info" {
@@ -125,5 +125,5 @@ terraform apply
 ✅ Can revoke access instantly by modifying role trust policy
 EOT
 
-  file_permission = "0644"
+  file_permission = "0444"
 }

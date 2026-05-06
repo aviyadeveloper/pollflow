@@ -22,3 +22,12 @@ module "bastion" {
   subnet_id     = module.vpc.public_subnets[0]
   instance_type = "t3.micro"
 }
+
+module "eks" {
+  source = "./eks"
+
+  project_name       = var.project_name
+  kubernetes_version = "1.31"
+  vpc_id             = module.vpc.vpc_id
+  private_subnet_ids = module.vpc.private_subnets
+}

@@ -7,7 +7,7 @@ variable "aws_region" {
 variable "main_project_path" {
   description = "Path to the main terraform project where backend.tf will be created"
   type        = string
-  default     = "../terraform"
+  default     = "../tf-main"
 }
 
 variable "project_name" {
@@ -15,3 +15,4 @@ variable "project_name" {
   type        = string
   default     = "cloudpollpro-bootstrap"
 }
+

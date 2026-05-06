@@ -40,3 +40,19 @@ output "bastion_connection_details" {
   description = "Complete connection details for the bastion host"
   value       = module.bastion.connection_details
 }
+
+# EKS Outputs
+output "eks_cluster_name" {
+  description = "Name of the EKS cluster"
+  value       = module.eks.cluster_name
+}
+
+output "eks_cluster_endpoint" {
+  description = "Endpoint for your Kubernetes API server"
+  value       = module.eks.cluster_endpoint
+}
+
+output "eks_configure_kubectl" {
+  description = "Command to configure kubectl"
+  value       = module.eks.configure_kubectl
+}
