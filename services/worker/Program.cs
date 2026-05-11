@@ -24,9 +24,17 @@ namespace Worker
                 
                 var redisHost = Environment.GetEnvironmentVariable("REDIS_HOST") ?? "redis";
 
+                Console.WriteLine("=== Worker Configuration ===");
+                Console.WriteLine($"DB_HOST: {dbHost}");
+                Console.WriteLine($"DB_USERNAME: {dbUsername}");
+                Console.WriteLine($"DB_PASSWORD: {(string.IsNullOrEmpty(dbPassword) ? "<empty>" : $"<set, length={dbPassword.Length}>")}");
+                Console.WriteLine($"DB_NAME: {dbName}");
+                Console.WriteLine($"REDIS_HOST: {redisHost}");
+
                 // Construct the connection strings
                 // Use NpgsqlConnectionStringBuilder to properly handle special characters in password
                 // AWS RDS requires SSL
+                Console.WriteLine("Building PostgreSQL connection string...");
                 var builder = new NpgsqlConnectionStringBuilder
                 {
                     Host = dbHost,
@@ -37,12 +45,25 @@ namespace Worker
                     TrustServerCertificate = true
                 };
                 var pgConnectionString = builder.ConnectionString;
-                Console.WriteLine($"Connecting to database: {dbHost}");
+                
+                // Log connection string without password
+                var safeBuilder = new NpgsqlConnectionStringBuilder(pgConnectionString) { Password = "<redacted>" };
+                Console.WriteLine($"Connection string: {safeBuilder.ConnectionString}");
+                Console.WriteLine($"SSL Mode: {builder.SslMode}");
+                Console.WriteLine($"Trust Server Certificate: {builder.TrustServerCertificate}");
+                Console.WriteLine("===========================");
+                Console.WriteLine();
                 var redisConnectionString = redisHost;
 
                 var pgsql = OpenDbConnection(pgConnectionString);
                 var redisConn = OpenRedisConnection(redisConnectionString);
                 var redis = redisConn.GetDatabase();
+
+                Console.WriteLine();
+                Console.WriteLine("====================================");
+                Console.WriteLine("   WORKER READY - Polling for votes");
+                Console.WriteLine("====================================");
+                Console.WriteLine();
 
                 // Keep alive is not implemented in Npgsql yet. This workaround was recommended:
                 // https://github.com/npgsql/npgsql/issues/1214#issuecomment-235828359
@@ -96,23 +117,63 @@ namespace Worker
         private static NpgsqlConnection OpenDbConnection(string connectionString)
         {
             NpgsqlConnection connection;
+            int attemptCount = 0;
 
+            Console.WriteLine("Attempting to connect to PostgreSQL database...");
+            
             while (true)
             {
+                attemptCount++;
                 try
                 {
+                    Console.WriteLine($"Connection attempt #{attemptCount}...");
                     connection = new NpgsqlConnection(connectionString);
                     connection.Open();
+                    Console.WriteLine("✓ Database connection successful!");
+                    Console.WriteLine($"  Server version: {connection.ServerVersion}");
+                    Console.WriteLine($"  Database: {connection.Database}");
+                    Console.WriteLine($"  Host: {connection.Host}");
                     break;
                 }
-                catch (SocketException)
+                catch (PostgresException pgEx)
                 {
-                    Console.Error.WriteLine("Waiting for db");
+                    Console.Error.WriteLine($"✗ PostgreSQL error (attempt #{attemptCount}):");
+                    Console.Error.WriteLine($"  Severity: {pgEx.Severity}");
+                    Console.Error.WriteLine($"  SqlState: {pgEx.SqlState}");
+                    Console.Error.WriteLine($"  Message: {pgEx.Message}");
+                    Console.Error.WriteLine($"  Detail: {pgEx.Detail}");
+                    Console.Error.WriteLine($"  Hint: {pgEx.Hint}");
                     Thread.Sleep(1000);
                 }
-                catch (DbException)
+                catch (SocketException socketEx)
                 {
-                    Console.Error.WriteLine("Waiting for db");
+                    Console.Error.WriteLine($"✗ Network error (attempt #{attemptCount}):");
+                    Console.Error.WriteLine($"  SocketErrorCode: {socketEx.SocketErrorCode}");
+                    Console.Error.WriteLine($"  Message: {socketEx.Message}");
+                    Thread.Sleep(1000);
+                }
+                catch (DbException dbEx)
+                {
+                    Console.Error.WriteLine($"✗ Database error (attempt #{attemptCount}):");
+                    Console.Error.WriteLine($"  Type: {dbEx.GetType().Name}");
+                    Console.Error.WriteLine($"  Message: {dbEx.Message}");
+                    if (dbEx.InnerException != null)
+                    {
+                        Console.Error.WriteLine($"  Inner Exception: {dbEx.InnerException.GetType().Name}: {dbEx.InnerException.Message}");
+                    }
+                    Thread.Sleep(1000);
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"✗ Unexpected error (attempt #{attemptCount}):");
+                    Console.Error.WriteLine($"  Type: {ex.GetType().FullName}");
+                    Console.Error.WriteLine($"  Message: {ex.Message}");
+                    if (ex.InnerException != null)
+                    {
+                        Console.Error.WriteLine($"  Inner Exception: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
+                    }
+                    Console.Error.WriteLine($"  Stack Trace:");
+                    Console.Error.WriteLine(ex.StackTrace);
                     Thread.Sleep(1000);
                 }
             }
@@ -132,19 +193,38 @@ namespace Worker
         private static ConnectionMultiplexer OpenRedisConnection(string hostname)
         {
             // Use IP address to workaround https://github.com/StackExchange/StackExchange.Redis/issues/410
+            Console.WriteLine($"Resolving Redis hostname: {hostname}");
             var ipAddress = GetIp(hostname);
-            Console.WriteLine($"Found redis at {ipAddress}");
+            Console.WriteLine($"✓ Resolved Redis to {ipAddress}");
 
+            int attemptCount = 0;
             while (true)
             {
+                attemptCount++;
                 try
                 {
-                    Console.Error.WriteLine("Connecting to redis");
-                    return ConnectionMultiplexer.Connect(ipAddress);
+                    Console.WriteLine($"Connecting to Redis (attempt #{attemptCount})...");
+                    var connection = ConnectionMultiplexer.Connect(ipAddress);
+                    Console.WriteLine($"✓ Redis connection successful!");
+                    Console.WriteLine($"  Endpoints: {string.Join(", ", connection.GetEndPoints())}");
+                    Console.WriteLine($"  Status: {(connection.IsConnected ? "Connected" : "Disconnected")}");
+                    return connection;
                 }
-                catch (RedisConnectionException)
+                catch (RedisConnectionException redisEx)
                 {
-                    Console.Error.WriteLine("Waiting for redis");
+                    Console.Error.WriteLine($"✗ Redis connection error (attempt #{attemptCount}):");
+                    Console.Error.WriteLine($"  Message: {redisEx.Message}");
+                    if (redisEx.InnerException != null)
+                    {
+                        Console.Error.WriteLine($"  Inner Exception: {redisEx.InnerException.Message}");
+                    }
+                    Thread.Sleep(1000);
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"✗ Unexpected Redis error (attempt #{attemptCount}):");
+                    Console.Error.WriteLine($"  Type: {ex.GetType().Name}");
+                    Console.Error.WriteLine($"  Message: {ex.Message}");
                     Thread.Sleep(1000);
                 }
             }
