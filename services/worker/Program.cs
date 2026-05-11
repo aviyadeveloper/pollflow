@@ -25,9 +25,19 @@ namespace Worker
                 var redisHost = Environment.GetEnvironmentVariable("REDIS_HOST") ?? "redis";
 
                 // Construct the connection strings
-                // AWS RDS requires SSL, so we add SSL Mode=Require and Trust Server Certificate=true
-                var pgConnectionString = $"Server={dbHost};Username={dbUsername};Password={dbPassword};Database={dbName};SSL Mode=Require;Trust Server Certificate=true";
-                Console.WriteLine($"Database connection string: {pgConnectionString}");
+                // Use NpgsqlConnectionStringBuilder to properly handle special characters in password
+                // AWS RDS requires SSL
+                var builder = new NpgsqlConnectionStringBuilder
+                {
+                    Host = dbHost,
+                    Username = dbUsername,
+                    Password = dbPassword,
+                    Database = dbName,
+                    SslMode = SslMode.Require,
+                    TrustServerCertificate = true
+                };
+                var pgConnectionString = builder.ConnectionString;
+                Console.WriteLine($"Connecting to database: {dbHost}");
                 var redisConnectionString = redisHost;
 
                 var pgsql = OpenDbConnection(pgConnectionString);

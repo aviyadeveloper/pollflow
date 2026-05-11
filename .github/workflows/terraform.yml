@@ -40,3 +40,22 @@ jobs:
         run: |
           terraform -chdir=infra/tf-main init -backend=false
           terraform -chdir=infra/tf-main validate
+
+  # Always-pass job that other required checks can depend on
+  terraform-gate:
+    name: Terraform Gate
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [terraform-checks]
+    steps:
+      - name: Check Terraform Status
+        run: |
+          if [[ "${{ needs.terraform-checks.result }}" == "success" ]] || [[ "${{ needs.terraform-checks.result }}" == "skipped" ]]; then
+            echo "Terraform checks passed or skipped"
+            exit 0
+          else
+            echo "Terraform checks failed"
+            exit 1
+          fi
+          terraform -chdir=infra/tf-main init -backend=false
+          terraform -chdir=infra/tf-main validate
