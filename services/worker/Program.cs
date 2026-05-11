@@ -84,11 +84,13 @@ namespace Worker
                         redis = redisConn.GetDatabase();
                     }
 
-                    string json = redis.ListLeftPopAsync("votes").Result;
+                    string? json = redis.ListLeftPopAsync("votes").Result;
                     if (json != null)
                     {
                         var vote = JsonConvert.DeserializeAnonymousType(json, definition);
-                        Console.WriteLine($"Processing vote for '{vote.vote}' by '{vote.voter_id}'");
+                        if (vote != null)
+                        {
+                            Console.WriteLine($"Processing vote for '{vote.vote}' by '{vote.voter_id}'");
 
                         // Reconnect DB if down
                         if (!pgsql.State.Equals(System.Data.ConnectionState.Open))
@@ -99,6 +101,7 @@ namespace Worker
                         else
                         { // Normal +1 vote requested
                             UpdateVote(pgsql, vote.voter_id, vote.vote);
+                        }
                         }
                     }
                     else
@@ -206,7 +209,7 @@ namespace Worker
                     Console.WriteLine($"Connecting to Redis (attempt #{attemptCount})...");
                     var connection = ConnectionMultiplexer.Connect(ipAddress);
                     Console.WriteLine($"✓ Redis connection successful!");
-                    Console.WriteLine($"  Endpoints: {string.Join(", ", connection.GetEndPoints())}");
+                    Console.WriteLine($"  Endpoints: {string.Join(", ", connection.GetEndPoints().Select(e => e.ToString()))}");
                     Console.WriteLine($"  Status: {(connection.IsConnected ? "Connected" : "Disconnected")}");
                     return connection;
                 }
