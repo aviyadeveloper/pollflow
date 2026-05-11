@@ -26,11 +26,11 @@ resource "aws_iam_openid_connect_provider" "github_actions" {
   }
 }
 
-# IAM Role for GitHub Actions (Read-Only for Terraform Plan)
+# IAM Role for GitHub Actions (Terraform Plan + Application Deployments)
 resource "aws_iam_role" "github_actions_role" {
   count = var.github_repo_owner != "" && var.github_repo_name != "" ? 1 : 0
 
-  name = "${var.project_name}-github-actions-ro"
+  name = "${var.project_name}-github-actions"
   path = "/ci/"
 
   assume_role_policy = jsonencode({
@@ -56,16 +56,16 @@ resource "aws_iam_role" "github_actions_role" {
 
   tags = {
     Project   = var.project_name
-    Purpose   = "GitHub Actions CI read-only access"
+    Purpose   = "GitHub Actions - Terraform Plan + Deployments"
     ManagedBy = "terraform"
   }
 }
 
-# Read-Only Policy for Terraform Plan
+# Combined Policy for Terraform Plan + Application Deployments
 resource "aws_iam_role_policy" "github_actions_terraform_ro" {
   count = var.github_repo_owner != "" && var.github_repo_name != "" ? 1 : 0
 
-  name = "TerraformReadOnly"
+  name = "TerraformAndDeployment"
   role = aws_iam_role.github_actions_role[0].name
 
   policy = jsonencode({
@@ -122,7 +122,37 @@ resource "aws_iam_role_policy" "github_actions_terraform_ro" {
           "eks:ListClusters"
         ]
         Resource = "*"
+      },
+      {
+        Sid    = "ECRGetAuthToken"
+        Effect = "Allow"
+        Action = [
+          "ecr:GetAuthorizationToken"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "ECRPushImages"
+        Effect = "Allow"
+        Action = [
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage",
+          "ecr:PutImage",
+          "ecr:InitiateLayerUpload",
+          "ecr:UploadLayerPart",
+          "ecr:CompleteLayerUpload"
+        ]
+        Resource = [
+          "arn:aws:ecr:${var.aws_region}:${data.aws_caller_identity.current.account_id}:repository/${var.project_name}-*"
+        ]
       }
     ]
   })
+}
+
+# Output the role ARN for GitHub Actions configuration and EKS access
+output "github_actions_role_arn" {
+  description = "IAM role ARN for GitHub Actions (Terraform plan + deployments)"
+  value       = var.github_repo_owner != "" && var.github_repo_name != "" ? aws_iam_role.github_actions_role[0].arn : null
 }

@@ -1,0 +1,140 @@
+name: Build and Deploy to EKS
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "services/**"
+      - "k8s/apps/**"
+      - ".github/workflows/build-and-deploy.yml"
+  workflow_dispatch:
+
+env:
+  AWS_REGION: eu-west-3
+  EKS_CLUSTER_NAME: cloudpollpro-cluster
+
+jobs:
+  build:
+    name: Build and Push Images
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    strategy:
+      matrix:
+        service:
+          - name: vote
+            context: ./services/vote
+            image: cloudpollpro-vote
+          - name: result
+            context: ./services/result
+            image: cloudpollpro-result
+          - name: worker
+            context: ./services/worker
+            image: cloudpollpro-worker
+
+    outputs:
+      image-tag: ${{ steps.image-tag.outputs.tag }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Generate image tag
+        id: image-tag
+        run: echo "tag=${{ github.sha }}" >> $GITHUB_OUTPUT
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_GITHUB_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push image to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ matrix.service.image }}
+          IMAGE_TAG: ${{ steps.image-tag.outputs.tag }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ${{ matrix.service.context }}
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          echo "Pushed $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+  deploy:
+    name: Deploy to EKS
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (GitHub Actions role)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_GITHUB_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Assume Terraform role for kubectl access
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_TERRAFORM_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Update image tags in manifests
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ needs.build.outputs.image-tag }}
+        run: |
+          # Update image tags in deployment manifests
+          sed -i "s|image: .*cloudpollpro-vote.*|image: $ECR_REGISTRY/cloudpollpro-vote:$IMAGE_TAG|g" k8s/apps/vote/deployment.yaml
+          sed -i "s|image: .*cloudpollpro-result.*|image: $ECR_REGISTRY/cloudpollpro-result:$IMAGE_TAG|g" k8s/apps/result/deployment.yaml
+          sed -i "s|image: .*cloudpollpro-worker.*|image: $ECR_REGISTRY/cloudpollpro-worker:$IMAGE_TAG|g" k8s/apps/worker/deployment.yaml
+
+      - name: Deploy to EKS
+        run: |
+          echo "Applying Kubernetes manifests..."
+          kubectl apply -f k8s/apps/
+
+      - name: Wait for rollouts
+        run: |
+          echo "Waiting for deployments to complete..."
+          kubectl rollout status deployment/vote --timeout=5m
+          kubectl rollout status deployment/result --timeout=5m
+          kubectl rollout status deployment/worker --timeout=5m
+
+      - name: Verify deployments
+        run: |
+          echo "Deployment status:"
+          kubectl get deployments -l app in (vote,result,worker)
+          kubectl get pods -l app in (vote,result,worker)
+
+      - name: Show deployment summary
+        if: always()
+        run: |
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Cluster**: ${{ env.EKS_CLUSTER_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image Tag**: ${{ needs.build.outputs.image-tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Deployments" >> $GITHUB_STEP_SUMMARY
+          kubectl get deployments -l app in (vote,result,worker) >> $GITHUB_STEP_SUMMARY || true

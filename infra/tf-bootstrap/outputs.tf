@@ -17,8 +17,3 @@ output "external_id" {
   value       = var.project_name
   sensitive   = true
 }
-
-output "github_actions_role_arn" {
-  description = "ARN of the GitHub Actions IAM role for CI/CD"
-  value       = var.github_repo_owner != "" && var.github_repo_name != "" ? aws_iam_role.github_actions_role[0].arn : "Not configured - set github_repo_owner and github_repo_name variables"
-}
