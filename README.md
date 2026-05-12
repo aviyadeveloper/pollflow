@@ -1,179 +1,294 @@
 # CloudPollPro
 
-Educational AWS/Kubernetes infrastructure project for a real-time polling application.
+A cloud-native microservices voting application deployed on AWS EKS, demonstrating modern infrastructure as code, Kubernetes orchestration, and secure CI/CD practices.
 
-## Architecture
+## Summary
 
-**Infrastructure:**
-- **AWS EKS**: Kubernetes cluster (v1.31) across 3 availability zones
-- **RDS PostgreSQL**: 16.13 for persistent data storage
-- **ECR**: Container registry for application images
-- **VPC**: Isolated network with public/private subnets
+CloudPollPro is an educational project showcasing end-to-end cloud infrastructure deployment using Terraform and Kubernetes. The application allows users to vote between two options, with votes processed asynchronously and results displayed in real-time.
 
-**Kubernetes Resources:**
-- **Redis**: Primary-replica setup for session caching and real-time features
-- **External Secrets Operator**: Syncs AWS Secrets Manager to Kubernetes
-- **EBS CSI Driver**: Persistent volumes for stateful workloads
+**Key Features:**
+- **Infrastructure as Code**: Complete AWS infrastructure managed with Terraform (VPC, EKS, RDS, ECR)
+- **Microservices Architecture**: Three containerized services (vote, worker, result) deployed on Kubernetes
+- **Secure by Design**: IAM roles with AssumeRole pattern, IRSA for pod-level permissions, no static credentials
+- **Automated CI/CD**: GitHub Actions with OIDC federation for credential-less deployments
+- **Production Patterns**: Multi-AZ RDS, Redis primary-replica cluster, horizontal pod autoscaling, ingress with ALB
+
+**Technology Stack:**
+- **Cloud**: AWS (EKS, RDS PostgreSQL, ECR, S3, Secrets Manager)
+- **Infrastructure**: Terraform >= 1.9, remote S3 state with native locking
+- **Container Orchestration**: Kubernetes 1.31 (managed EKS)
+- **Applications**: Python/Flask (vote), .NET Core (worker), Node.js (result)
+- **Data Layer**: Redis cluster, PostgreSQL 16.3 Multi-AZ
+
+## Architecture Overview
+
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#e5e7eb','primaryTextColor':'#111827','primaryBorderColor':'#9ca3af','lineColor':'#111827','secondaryColor':'#d1d5db','tertiaryColor':'#f3f4f6','edgeLabelBackground':'#ffffff','mainBkg':'#f5f5f4','nodeBorder':'#9ca3af','background':'#f5f5f4','clusterBkg':'transparent'},'themeCSS':'.node rect, .node circle, .node ellipse, .node polygon, .node path { filter: none !important; box-shadow: none !important; } .cluster rect { filter: none !important; box-shadow: none !important; } svg { background-color: #f5f5f4 !important; } .cluster-label { background-color: #ffffff !important; padding: 6px 12px !important; border-radius: 4px !important; font-size: 16px !important; font-weight: 700 !important; box-shadow: 0 1px 3px rgba(0,0,0,0.12) !important; border: 1px solid #d1d5db !important; } .edgePath, .edgePath path, .flowchart-link { z-index: 1 !important; }'}}%%
+graph TB
+    USERS["👥 Users"]
+    GITHUB["🤖 GitHub Actions"]
+    
+    subgraph TERRAFORM["🔧 Terraform Infrastructure"]
+        direction TB
+        BOOTSTRAP["tf-bootstrap<br/><i>S3 state, IAM roles, OIDC</i>"]
+        TFMAIN["tf-main<br/><i>VPC, EKS, RDS, ECR, Bastion</i>"]
+    end
+    
+    subgraph AWS["☁️ AWS Account (eu-west-3)"]
+        direction TB
+        
+        subgraph NETWORK["🌐 Network Layer"]
+            direction LR
+            VPC["Multi-AZ VPC<br/>10.0.0.0/16"]
+            ALB["Application Load Balancer"]
+        end
+        
+        subgraph COMPUTE["⎈ Kubernetes (EKS 1.31)"]
+            direction TB
+            
+            INGRESS["Ingress Controller<br/><i>AWS LB Controller</i>"]
+            
+            subgraph APPS["Applications"]
+                direction LR
+                VOTE["Vote Service<br/><i>Python/Flask</i>"]
+                WORKER["Worker Service<br/><i>.NET Core</i>"]
+                RESULT["Result Service<br/><i>Node.js</i>"]
+            end
+            
+            subgraph ADDONS["Cluster Addons"]
+                direction LR
+                EBS["EBS CSI Driver"]
+                ESO["External Secrets"]
+            end
+        end
+        
+        subgraph DATA["💾 Data Layer"]
+            direction LR
+            REDIS["Redis Cluster<br/><i>Primary + Replica</i>"]
+            RDS["PostgreSQL 16.3<br/><i>Multi-AZ</i>"]
+        end
+        
+        subgraph SERVICES["📦 AWS Services"]
+            direction LR
+            ECR["ECR<br/><i>Container Registry</i>"]
+            SECRETS["Secrets Manager<br/><i>DB credentials</i>"]
+        end
+    end
+
+    %% User flow
+    USERS -->|HTTP| ALB
+    ALB --> INGRESS
+    INGRESS --> VOTE
+    INGRESS --> RESULT
+    
+    %% Application flow
+    VOTE -->|write votes| REDIS
+    WORKER -->|read votes| REDIS
+    WORKER -->|write results| RDS
+    RESULT -->|read results| RDS
+    
+    %% CI/CD flow
+    GITHUB -->|OIDC auth| TFMAIN
+    GITHUB -->|push images| ECR
+    GITHUB -->|deploy apps| APPS
+    
+    %% Infrastructure dependencies
+    BOOTSTRAP -.->|creates state + roles| TFMAIN
+    TFMAIN -.->|provisions| NETWORK
+    TFMAIN -.->|provisions| COMPUTE
+    TFMAIN -.->|provisions| DATA
+    TFMAIN -.->|provisions| SERVICES
+    
+    %% Secrets flow
+    SECRETS -.->|injected via| ESO
+    ESO -.->|provides credentials| APPS
+    
+    %% Storage
+    EBS -.->|persistent volumes| REDIS
+
+    %% Styling
+    classDef userStyle fill:#14B8A6,stroke:#0D9488,stroke-width:2px,color:#fff
+    classDef tfStyle fill:#7C3AED,stroke:#6D28D9,stroke-width:2px,color:#fff
+    classDef networkStyle fill:#F59E0B,stroke:#D97706,stroke-width:2px,color:#fff
+    classDef appStyle fill:#3B82F6,stroke:#2563EB,stroke-width:2px,color:#fff
+    classDef dataStyle fill:#EC4899,stroke:#DB2777,stroke-width:2px,color:#fff
+    classDef serviceStyle fill:#10B981,stroke:#059669,stroke-width:2px,color:#fff
+    classDef addonStyle fill:#8B5CF6,stroke:#7C3AED,stroke-width:2px,color:#fff
+    
+    class USERS,GITHUB userStyle
+    class BOOTSTRAP,TFMAIN tfStyle
+    class VPC,ALB networkStyle
+    class INGRESS,VOTE,WORKER,RESULT appStyle
+    class REDIS,RDS dataStyle
+    class ECR,SECRETS serviceStyle
+    class EBS,ESO addonStyle
+    
+    style TERRAFORM fill:#f3f4f6,stroke:#6b7280,stroke-width:2px,stroke-dasharray: 5 5
+    style AWS fill:#e5e7eb,stroke:#4b5563,stroke-width:2px,stroke-dasharray: 5 5
+    style NETWORK fill:#ffffff,stroke:#9ca3af,stroke-width:1px,stroke-dasharray: 5 5
+    style COMPUTE fill:#ffffff,stroke:#9ca3af,stroke-width:1px,stroke-dasharray: 5 5
+    style APPS fill:#f9fafb,stroke:#d1d5db,stroke-width:1px
+    style ADDONS fill:#f9fafb,stroke:#d1d5db,stroke-width:1px
+    style DATA fill:#ffffff,stroke:#9ca3af,stroke-width:1px,stroke-dasharray: 5 5
+    style SERVICES fill:#ffffff,stroke:#9ca3af,stroke-width:1px,stroke-dasharray: 5 5
+```
+
+**Color Legend:**
+- 🟦 **Users & CI/CD**: External actors
+- 🟣 **Terraform**: Infrastructure provisioning
+- 🟡 **Network**: Load balancing and routing
+- 🔵 **Applications**: Microservices
+- 🟣 **Addons**: Kubernetes operators
+- 🩷 **Data**: Persistent storage
+- 🟢 **AWS Services**: Container registry and secrets
 
 ## Project Structure
 
 ```
-infra/
-├── tf-bootstrap/     # S3 backend, IAM roles, GitHub OIDC
-├── tf-main/          # VPC, EKS, RDS, ECR modules
-└── scripts/          # Helper scripts for cluster management
-
-k8s/
-├── storage/          # StorageClass definitions
-├── redis/            # Redis StatefulSets and services
-├── secrets/          # External Secrets configuration
-└── README.md         # Kubernetes architecture documentation
-
-services/             # Application microservices (future)
+cloudpollpro/
+├── infra/
+│   ├── tf-bootstrap/       # One-time AWS setup (S3 state, IAM, OIDC)
+│   ├── tf-main/            # Main infrastructure (VPC, EKS, RDS, ECR)
+│   └── scripts/            # Helper scripts
+├── k8s/                    # Kubernetes manifests
+│   ├── apps/               # Application deployments
+│   ├── redis/              # Redis cluster
+│   ├── secrets/            # External Secrets config
+│   ├── ingress/            # ALB ingress rules
+│   └── storage/            # StorageClass definitions
+├── services/               # Application source code
+│   ├── vote/               # Python voting frontend
+│   ├── worker/             # .NET vote processor
+│   └── result/             # Node.js results viewer
+└── scripts/                # Project automation
 ```
 
-## Setup
+## Quick Start
 
-See [ROADMAP.md](ROADMAP.md) for implementation phases.
+### 1. Bootstrap AWS Infrastructure
 
-**Prerequisites:**
-- AWS CLI configured
-- kubectl installed
-- Terraform >= 1.5
-
-**Bootstrap infrastructure:**
 ```bash
 cd infra/tf-bootstrap
+
+# Configure variables
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars with your AWS region and project settings
+
+# Deploy bootstrap
 terraform init
 terraform apply
+
+# Backup the state file
+cp terraform.tfstate ~/cloudpollpro-bootstrap.tfstate.backup
 ```
 
-**Deploy main infrastructure:**
+See [tf-bootstrap/README.md](infra/tf-bootstrap/README.md) for detailed setup.
+
+### 2. Deploy Main Infrastructure
+
 ```bash
-cd infra/tf-main
+cd ../tf-main
+
+# Initialize with remote state
 terraform init
-terraform apply
+
+# Deploy infrastructure
+terraform plan
+terraform apply  # Takes ~15-20 minutes for EKS cluster
 ```
 
-**Configure kubectl:**
-```bash
-aws eks update-kubeconfig --name cloudpollpro-cluster --region eu-west-3
-```
+See [tf-main/README.md](infra/tf-main/README.md) for module details and configuration.
 
-**Deploy Kubernetes infrastructure (one-time setup):**
+### 3. Deploy Applications
+
 ```bash
-# 1. Deploy Redis (primary + replicas)
+# Configure kubectl
+aws eks update-kubeconfig --name cloudpollpro-eks-cluster --region eu-west-3
+
+# Apply Kubernetes manifests
+kubectl apply -f k8s/storage/
 kubectl apply -f k8s/redis/
-
-# 2. Deploy External Secrets Operator (syncs AWS Secrets Manager to K8s)
 kubectl apply -f k8s/secrets/
-
-# 3. Deploy Ingress resources (creates public ALBs)
+kubectl apply -f k8s/apps/
 kubectl apply -f k8s/ingress/
 
-# Verify deployments
-kubectl get pods -n default          # Check Redis pods
-kubectl get secretstore -n default   # Check External Secrets
-kubectl get ingress -n default       # Check ALB creation
-
-# Wait for ALBs to provision (takes 2-4 minutes)
-# Check ALB status:
-aws elbv2 describe-load-balancers --region eu-west-3 \
-  --query 'LoadBalancers[?starts_with(LoadBalancerName, `k8s-default`)].{Name:LoadBalancerName,State:State.Code}' \
-  --output table
+# Verify deployment
+kubectl get pods -A
+kubectl get ingress
 ```
 
-**Application deployment:**
-Application services (vote, result, worker) are deployed automatically via GitHub Actions CI/CD pipeline when changes are pushed to `main` branch. See [.github/workflows/build-and-deploy.yml](.github/workflows/build-and-deploy.yml).
+See [k8s/README.md](k8s/README.md) for Kubernetes architecture and troubleshooting.
 
-To manually deploy applications:
+## Component Documentation
+
+Each major component has detailed documentation:
+
+- **[Bootstrap Setup](infra/tf-bootstrap/README.md)**: S3 state backend, IAM roles, GitHub OIDC integration
+- **[Infrastructure](infra/tf-main/README.md)**: Network, compute, data layer, security architecture
+- **[Kubernetes](k8s/README.md)**: Application deployments, storage, secrets, ingress configuration
+- **[Services](services/README.md)**: Application source code and Dockerfiles
+
+## Security Features
+
+- **No Static Credentials**: All access via IAM role assumption with temporary tokens
+- **IRSA**: Pod-level IAM permissions for External Secrets Operator
+- **OIDC Federation**: GitHub Actions authenticate without storing AWS keys
+- **External ID**: Role assumption requires shared secret validation
+- **Secrets Manager**: Database credentials injected at runtime
+- **Network Isolation**: Private subnets for compute, public only for load balancers
+- **Multi-AZ**: High availability for databases and compute
+
+## Cost Estimation
+
+Approximate monthly cost (AWS eu-west-3):
+- **EKS Cluster**: $73 (control plane)
+- **EC2 Nodes**: $30-60 (t3.small, 1-3 nodes)
+- **RDS**: $15 (db.t3.micro Multi-AZ)
+- **NAT Gateways**: $32 (2x Multi-AZ)
+- **S3/Secrets**: <$5
+- **Total**: ~$150-180/month
+
+> **Tip**: Destroy when not in use: `terraform destroy` in tf-main saves ~$140/month
+
+## Learning Objectives
+
+This project demonstrates:
+- ✅ Terraform module design and state management
+- ✅ EKS cluster deployment with managed node groups
+- ✅ Kubernetes StatefulSets, Deployments, Services, Ingress
+- ✅ IAM roles with AssumeRole pattern and IRSA
+- ✅ Multi-AZ architecture for high availability
+- ✅ External Secrets Operator integration
+- ✅ AWS Load Balancer Controller
+- ✅ Container registry management with ECR
+- ✅ CI/CD with GitHub Actions OIDC
+- ✅ Zero-downtime deployments and rolling updates
+
+## Requirements
+
+- **Terraform**: >= 1.9 (for S3 native state locking)
+- **AWS CLI**: >= 2.0
+- **kubectl**: >= 1.28
+- **Docker**: >= 20.10 (for building images)
+- **AWS Account**: With admin access for bootstrap
+- **GitHub**: For CI/CD integration (optional)
+
+## Cleanup
+
+To avoid ongoing AWS charges:
+
 ```bash
-kubectl apply -R -f k8s/apps/
+# 1. Delete Kubernetes resources (removes ALBs)
+kubectl delete -f k8s/ingress/
+kubectl delete -f k8s/apps/
+kubectl delete -f k8s/redis/
+kubectl delete pvc --all
+
+# 2. Destroy main infrastructure
+cd infra/tf-main
+terraform destroy  # Confirms before deletion
+
+# 3. Optionally destroy bootstrap (removes state backend)
+cd ../tf-bootstrap
+terraform destroy
 ```
-
-**Access the application:**
-```bash
-# Get ALB DNS names (wait 2-4 minutes after applying ingress for ALBs to become active)
-kubectl get ingress -n default
-
-# Access services in your browser:
-# Vote:   http://<vote-alb-dns>
-# Result: http://<result-alb-dns>
-```
-
-## Production Considerations
-
-⚠️ **This is an educational project.** For production use, address these items:
-
-### Security
-- [ ] **Redis Authentication**: Enable `requirepass` in ConfigMap and use Kubernetes secrets
-- [ ] **Network Policies**: Restrict pod-to-pod communication to necessary paths only
-- [ ] **Pod Security Standards**: Enforce restricted PSS on all namespaces
-- [ ] **Secrets Encryption**: Enable encryption at rest for Kubernetes secrets (KMS)
-- [ ] **RBAC**: Implement least-privilege service accounts for all workloads
-- [ ] **VPC Endpoints**: Use AWS PrivateLink for S3, ECR, Secrets Manager to avoid public internet
-
-### High Availability
-- [ ] **Multi-AZ Redis**: Deploy Redis across multiple availability zones
-- [ ] **RDS Multi-AZ**: Enable automatic failover for database
-- [ ] **Pod Disruption Budgets**: Ensure minimum replicas during node maintenance
-- [ ] **Cluster Autoscaler**: Automatically scale EKS nodes based on demand
-- [ ] **Application Autoscaling**: HPA for application pods based on CPU/memory
-
-### Observability
-- [ ] **Prometheus + Grafana**: Metrics collection and dashboards
-- [ ] **ELK/Loki Stack**: Centralized logging
-- [ ] **Distributed Tracing**: OpenTelemetry or Jaeger for request tracing
-- [ ] **CloudWatch Integration**: Export cluster metrics to CloudWatch
-- [ ] **Alerting**: PagerDuty/Opsgenie integration for critical alerts
-
-### Reliability
-- [ ] **Backup Strategy**: Automated backups for RDS, Redis, and EBS volumes
-- [ ] **Disaster Recovery**: Cross-region backup replication
-- [ ] **Health Checks**: Proper liveness and readiness probes on all pods
-- [ ] **Resource Limits**: CPU/memory limits on all containers to prevent noisy neighbors
-- [ ] **Rate Limiting**: API gateway or ingress-level rate limiting
-
-### Cost Optimization
-- [ ] **Spot Instances**: Mix of on-demand and spot nodes for non-critical workloads
-- [ ] **Right-sizing**: Review instance types based on actual usage
-- [ ] **Idle Resource Cleanup**: Automatically delete unused EBS volumes, snapshots
-- [ ] **Reserved Instances**: Commit to RIs for predictable baseline capacity
-
-### Compliance & Governance
-- [ ] **Audit Logging**: Enable CloudTrail and EKS audit logs
-- [ ] **Policy Enforcement**: OPA/Kyverno for admission control policies
-- [ ] **Tagging Strategy**: Consistent resource tagging for cost allocation
-- [ ] **Image Scanning**: Container vulnerability scanning in CI/CD pipeline
-
-### CI/CD & Testing
-- [ ] **Branch Protection**: Require PR reviews and status checks before merging to main
-- [ ] **Pre-merge Testing**: Run integration tests in ephemeral test clusters
-- [ ] **Infrastructure Testing**: Use `terraform plan` in PRs, require manual approval for applies
-- [ ] **Container Scanning**: Scan images for vulnerabilities before pushing to ECR (Trivy, Snyk)
-- [ ] **Manifest Validation**: Use `kubeval` or `kubeconform` to validate K8s YAML syntax
-- [ ] **Dry-run Deployments**: Test `kubectl apply --dry-run=server` in PRs
-- [ ] **Smoke Tests**: Basic health checks after deployment (curl endpoints, check pod status)
-- [ ] **Rollback Strategy**: Automated rollback on failed health checks or error rate spikes
-- [ ] **Blue-Green or Canary**: Progressive deployment strategies with traffic shifting
-- [ ] **Local Testing**: Use `act` (github.com/nektos/act) to test workflows locally before pushing
-- [ ] **E2E Tests**: Automated browser tests (Playwright, Cypress) running against staging environment
-- [ ] **Performance Testing**: Load tests before production deployment (k6, Locust)
-
-**Current State:** Direct push to main triggers build/deploy. No pre-merge validation.
-
-**Recommended Workflow:**
-1. Feature branch with test workflow that runs validation only
-2. PR with required checks: linting, unit tests, security scans, dry-run
-3. Manual approval gate for production deployments
-4. Automated rollback on deployment failure
-
-## Documentation
-
-- [Kubernetes Architecture](k8s/README.md) - Detailed K8s resource documentation with diagrams
-- [Terraform Modules](infra/tf-main/README-SETUP.md) - Infrastructure module usage
-- [ROADMAP.md](ROADMAP.md) - Implementation phases and progress
-
-## License
-
-Educational project - see institution guidelines.
