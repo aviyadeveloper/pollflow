@@ -3,25 +3,25 @@
         bastion-ssh pre-commit
 
 infra-bootstrap:
-	@echo "Bootstrap Terraform configuration for CloudPollPro project"
+	@echo "Bootstrap Terraform configuration for Pollflow project"
 	cd infra/tf-bootstrap && terraform init
 	cd infra/tf-bootstrap && terraform apply -auto-approve
 
 infra-main:
-	@echo "Applying Terraform configuration for CloudPollPro project"
+	@echo "Applying Terraform configuration for Pollflow project"
 	cd infra/tf-main && terraform init
 	cd infra/tf-main && terraform apply -auto-approve
 
 infra-destroy-bootstrap:
-	@echo "Destroying Terraform bootstrap infrastructure for CloudPollPro project"
+	@echo "Destroying Terraform bootstrap infrastructure for Pollflow project"
 	cd infra/tf-bootstrap && terraform destroy -auto-approve
 
 infra-destroy-main:
-	@echo "Destroying Terraform-managed infrastructure for CloudPollPro project"
+	@echo "Destroying Terraform-managed infrastructure for Pollflow project"
 	cd infra/tf-main && terraform destroy -auto-approve
 
 infra-destroy-all: 
-	@echo "Destroying all Terraform-managed infrastructure for CloudPollPro project"
+	@echo "Destroying all Terraform-managed infrastructure for Pollflow project"
 	$(MAKE) infra-destroy-main
 	$(MAKE) infra-destroy-bootstrap
 

@@ -1,10 +1,10 @@
 # Kubernetes Resources
 
-This directory contains Kubernetes manifests for CloudPollPro's core services deployed on EKS.
+This directory contains Kubernetes manifests for Pollflow's core services deployed on EKS.
 
 ## Summary
 
-CloudPollPro is a microservices-based voting application running on Amazon EKS. The deployment consists of three application services (vote, worker, result) backed by Redis for real-time voting data and PostgreSQL (RDS) for persistent results storage.
+Pollflow is a microservices-based voting application running on Amazon EKS. The deployment consists of three application services (vote, worker, result) backed by Redis for real-time voting data and PostgreSQL (RDS) for persistent results storage.
 
 **Key Infrastructure Components:**
 - **Storage**: EBS CSI Driver for dynamic persistent volume provisioning (gp3 encrypted volumes)
@@ -30,9 +30,9 @@ This diagram shows the foundational components: storage, data services, and secr
 graph TB
     subgraph AWS["☁️ AWS Services"]
         direction TB
-        SM[("🔐 Secrets Manager<br/><b>cloudpollpro-rds</b>")]
+        SM[("🔐 Secrets Manager<br/><b>pollflow-rds</b>")]
         EBS[("💾 EBS Volumes<br/><i>gp3 encrypted</i>")]
-        RDS[("🗄️ RDS PostgreSQL<br/><b>cloudpollpro-postgres</b>")]
+        RDS[("🗄️ RDS PostgreSQL<br/><b>pollflow-postgres</b>")]
     end
 
     subgraph K8S["⎈ EKS Cluster"]
@@ -264,7 +264,7 @@ graph TB
 - No authentication (dev environment)
 - Max memory policy: noeviction
 
-**Why**: Session storage, caching, real-time features for CloudPollPro application.
+**Why**: Session storage, caching, real-time features for Pollflow application.
 
 ### 3. Secrets Management (`secrets/`)
 
@@ -275,7 +275,7 @@ graph TB
   - Scope: Cluster-wide, usable from any namespace
 
 - **ExternalSecret**: `rds-credentials`
-  - Source: `cloudpollpro-rds-*` in AWS Secrets Manager
+  - Source: `pollflow-rds-*` in AWS Secrets Manager
   - Target: Kubernetes Secret `rds-credentials`
   - Refresh interval: 1 hour
   - Synced fields: username, password, host, port, dbname
@@ -284,11 +284,11 @@ graph TB
 
 ### 4. Applications (`apps/`)
 
-**CloudPollPro Microservices**
+**Pollflow Microservices**
 
 - **vote** (`apps/vote/`)
   - **Deployment**: 3 replicas with pod anti-affinity across zones
-  - **Image**: `058264398399.dkr.ecr.eu-west-3.amazonaws.com/cloudpollpro-vote:latest`
+  - **Image**: `058264398399.dkr.ecr.eu-west-3.amazonaws.com/pollflow-vote:latest`
   - **Language**: Python/Flask
   - **Purpose**: Frontend for voting (Cats vs Dogs)
   - **Connections**: Writes votes to `redis-primary:6379`
@@ -298,7 +298,7 @@ graph TB
 
 - **worker** (`apps/worker/`)
   - **Deployment**: 1 replica
-  - **Image**: `058264398399.dkr.ecr.eu-west-3.amazonaws.com/cloudpollpro-worker:latest`
+  - **Image**: `058264398399.dkr.ecr.eu-west-3.amazonaws.com/pollflow-worker:latest`
   - **Language**: .NET Core
   - **Purpose**: Background processor consuming votes from Redis and persisting to PostgreSQL
   - **Connections**: 
@@ -308,7 +308,7 @@ graph TB
 
 - **result** (`apps/result/`)
   - **Deployment**: 2 replicas
-  - **Image**: `058264398399.dkr.ecr.eu-west-3.amazonaws.com/cloudpollpro-result:latest`
+  - **Image**: `058264398399.dkr.ecr.eu-west-3.amazonaws.com/pollflow-result:latest`
   - **Language**: Node.js
   - **Purpose**: Real-time results dashboard
   - **Connections**: Reads from RDS PostgreSQL (via `rds-credentials` secret)

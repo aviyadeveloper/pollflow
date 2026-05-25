@@ -16,14 +16,14 @@ provider "aws" {
   region = "eu-west-3"
 
   assume_role {
-    role_arn     = "arn:aws:iam::058264398399:role/projects/cloudpollpro-bootstrap-terraform-role"
-    external_id  = "cloudpollpro-bootstrap"
+    role_arn     = "arn:aws:iam::058264398399:role/projects/pollflow-bootstrap-terraform-role"
+    external_id  = "pollflow-bootstrap"
     session_name = "terraform-${terraform.workspace}"
   }
 
   default_tags {
     tags = {
-      Project   = "cloudpollpro-bootstrap"
+      Project   = "pollflow-bootstrap"
       ManagedBy = "terraform"
     }
   }

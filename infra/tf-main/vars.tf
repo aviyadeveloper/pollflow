@@ -7,7 +7,7 @@ variable "region" {
 variable "project_name" {
   description = "Name of the project (used for tagging and naming resources)"
   type        = string
-  default     = "cloudpollpro"
+  default     = "pollflow"
 }
 
 variable "enable_nat_gateway" {

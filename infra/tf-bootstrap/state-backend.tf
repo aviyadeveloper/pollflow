@@ -4,7 +4,7 @@
 # ============================================================
 
 resource "aws_s3_bucket" "terraform_state" {
-  bucket        = "cloudpollpro-terraform-state-${data.aws_caller_identity.current.account_id}"
+  bucket        = "pollflow-terraform-state-${data.aws_caller_identity.current.account_id}"
   force_destroy = true # Allow deletion even with objects inside
 
   tags = {

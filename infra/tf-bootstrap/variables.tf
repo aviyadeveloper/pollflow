@@ -13,7 +13,7 @@ variable "main_project_path" {
 variable "project_name" {
   description = "Name of the project (used for tagging and naming resources)"
   type        = string
-  default     = "cloudpollpro-bootstrap"
+  default     = "pollflow-bootstrap"
 }
 
 variable "github_repo_owner" {
@@ -23,8 +23,8 @@ variable "github_repo_owner" {
 }
 
 variable "github_repo_name" {
-  description = "GitHub repository name (e.g., 'cloudpollpro')"
+  description = "GitHub repository name (e.g., 'pollflow')"
   type        = string
-  default     = "cloudpollpro"
+  default     = "pollflow"
 }
 

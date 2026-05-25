@@ -12,7 +12,7 @@ on:
 
 env:
   AWS_REGION: eu-west-3
-  EKS_CLUSTER_NAME: cloudpollpro-cluster
+  EKS_CLUSTER_NAME: pollflow-cluster
 
 jobs:
   build:
@@ -27,13 +27,13 @@ jobs:
         service:
           - name: vote
             context: ./services/vote
-            image: cloudpollpro-vote
+            image: pollflow-vote
           - name: result
             context: ./services/result
-            image: cloudpollpro-result
+            image: pollflow-result
           - name: worker
             context: ./services/worker
-            image: cloudpollpro-worker
+            image: pollflow-worker
 
     outputs:
       image-tag: ${{ steps.image-tag.outputs.tag }}
@@ -100,9 +100,9 @@ jobs:
           IMAGE_TAG: ${{ needs.build.outputs.image-tag }}
         run: |
           # Update image tags in deployment manifests
-          sed -i "s|image: .*cloudpollpro-vote.*|image: $ECR_REGISTRY/cloudpollpro-vote:$IMAGE_TAG|g" k8s/apps/vote/deployment.yaml
-          sed -i "s|image: .*cloudpollpro-result.*|image: $ECR_REGISTRY/cloudpollpro-result:$IMAGE_TAG|g" k8s/apps/result/deployment.yaml
-          sed -i "s|image: .*cloudpollpro-worker.*|image: $ECR_REGISTRY/cloudpollpro-worker:$IMAGE_TAG|g" k8s/apps/worker/deployment.yaml
+          sed -i "s|image: .*pollflow-vote.*|image: $ECR_REGISTRY/pollflow-vote:$IMAGE_TAG|g" k8s/apps/vote/deployment.yaml
+          sed -i "s|image: .*pollflow-result.*|image: $ECR_REGISTRY/pollflow-result:$IMAGE_TAG|g" k8s/apps/result/deployment.yaml
+          sed -i "s|image: .*pollflow-worker.*|image: $ECR_REGISTRY/pollflow-worker:$IMAGE_TAG|g" k8s/apps/worker/deployment.yaml
 
       - name: Deploy to EKS
         run: |

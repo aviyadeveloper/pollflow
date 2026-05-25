@@ -21,35 +21,35 @@ spec:
         app: worker
     spec:
       containers:
-      - name: worker
-        image: 058264398399.dkr.ecr.eu-west-3.amazonaws.com/cloudpollpro-worker:latest
-        env:
-        - name: REDIS_HOST
-          value: "redis-primary"
-        - name: DB_HOST
-          valueFrom:
-            secretKeyRef:
-              name: rds-credentials
-              key: host
-        - name: DB_USERNAME
-          valueFrom:
-            secretKeyRef:
-              name: rds-credentials
-              key: username
-        - name: DB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: rds-credentials
-              key: password
-        - name: DB_NAME
-          valueFrom:
-            secretKeyRef:
-              name: rds-credentials
-              key: dbname
-        resources:
-          requests:
-            memory: "128Mi"
-            cpu: "100m"
-          limits:
-            memory: "256Mi"
-            cpu: "200m"
+        - name: worker
+          image: 058264398399.dkr.ecr.eu-west-3.amazonaws.com/pollflow-worker:latest
+          env:
+            - name: REDIS_HOST
+              value: "redis-primary"
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: rds-credentials
+                  key: host
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: rds-credentials
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: rds-credentials
+                  key: password
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: rds-credentials
+                  key: dbname
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"

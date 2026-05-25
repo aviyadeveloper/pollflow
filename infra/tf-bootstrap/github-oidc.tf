@@ -99,7 +99,7 @@ resource "aws_iam_role_policy" "github_actions_terraform_ro" {
         Resource = "*"
         Condition = {
           StringLike = {
-            "aws:ResourceTag/Project" = "cloudpollpro*"
+            "aws:ResourceTag/Project" = "pollflow*"
           }
         }
       },
@@ -152,7 +152,7 @@ resource "aws_iam_role_policy" "github_actions_terraform_ro" {
           "ecr:CompleteLayerUpload"
         ]
         Resource = [
-          "arn:aws:ecr:${var.aws_region}:${data.aws_caller_identity.current.account_id}:repository/cloudpollpro-*"
+          "arn:aws:ecr:${var.aws_region}:${data.aws_caller_identity.current.account_id}:repository/pollflow-*"
         ]
       }
     ]

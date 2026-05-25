@@ -1,10 +1,10 @@
-# CloudPollPro Infrastructure (Terraform)
+# Pollflow Infrastructure (Terraform)
 
-This directory contains Terraform modules for provisioning CloudPollPro's AWS infrastructure.
+This directory contains Terraform modules for provisioning Pollflow's AWS infrastructure.
 
 ## Summary
 
-CloudPollPro's infrastructure is fully automated with Terraform, deploying a production-ready AWS environment with network isolation, high availability, and security best practices.
+Pollflow's infrastructure is fully automated with Terraform, deploying a production-ready AWS environment with network isolation, high availability, and security best practices.
 
 **Network & Compute:**
 - **VPC**: Multi-AZ VPC (10.0.0.0/16) with 3 public and 3 private subnets across availability zones
@@ -145,14 +145,14 @@ graph TB
             RDS_STANDBY -.->|sync replication| RDS_PRIMARY
         end
         
-        SM[("🔐 Secrets Manager<br/><b>cloudpollpro-rds</b>")]
+        SM[("🔐 Secrets Manager<br/><b>pollflow-rds</b>")]
     end
     
     subgraph REGISTRY["📦 Container Registry"]
         direction TB
-        ECR_VOTE["🐳 ECR: cloudpollpro-vote"]
-        ECR_RESULT["🐳 ECR: cloudpollpro-result"]
-        ECR_WORKER["🐳 ECR: cloudpollpro-worker"]
+        ECR_VOTE["🐳 ECR: pollflow-vote"]
+        ECR_RESULT["🐳 ECR: pollflow-result"]
+        ECR_WORKER["🐳 ECR: pollflow-worker"]
     end
     
     subgraph IAM["🔑 IAM Security (IRSA)"]
@@ -246,7 +246,7 @@ graph TB
 
 **Private Container Registries**
 
-- **Repositories**: `cloudpollpro-vote`, `cloudpollpro-result`, `cloudpollpro-worker`
+- **Repositories**: `pollflow-vote`, `pollflow-result`, `pollflow-worker`
 - **Image Scanning**: Enabled on push
 - **Encryption**: AES256 at rest
 - **Lifecycle Policy**: Keeps last 10 images per repository
@@ -262,7 +262,7 @@ graph TB
 - **Placement**: Public subnet (AZ1)
 - **Access**: SSH from anywhere (configurable)
 - **Purpose**: Secure access to private resources (EKS nodes, RDS)
-- **Key Pair**: `cloudpollpro-bastion-key` (stored in `.keys/`)
+- **Key Pair**: `pollflow-bastion-key` (stored in `.keys/`)
 
 **Why**: Provides secure entry point to private network resources for troubleshooting.
 
@@ -293,7 +293,7 @@ graph TB
   
 - **External Secrets IAM Role**: Enables syncing AWS Secrets Manager to Kubernetes
   - Service Account: `external-secrets` (external-secrets-system)
-  - IAM Role: Read secrets with prefix `cloudpollpro-*`
+  - IAM Role: Read secrets with prefix `pollflow-*`
 
 - **AWS Load Balancer Controller IAM Role**: Provisions ALBs for Ingress resources
   - Service Account: `aws-load-balancer-controller` (kube-system)
@@ -313,7 +313,7 @@ graph TB
   - Auto-scaling: Up to 100 GB
 - **Backup**: 7-day retention, automated snapshots
 - **Encryption**: At rest with AWS-managed keys
-- **Credentials**: Stored in AWS Secrets Manager (`cloudpollpro-rds`)
+- **Credentials**: Stored in AWS Secrets Manager (`pollflow-rds`)
 - **Access**: EKS nodes and bastion only (via security groups)
 - **Monitoring**: CloudWatch logs for PostgreSQL and upgrades
 
@@ -352,7 +352,7 @@ graph TB
 
 - AWS CLI configured with admin credentials
 - Terraform >= 1.0
-- Permissions to assume role: `arn:aws:iam::058264398399:role/projects/cloudpollpro-bootstrap-terraform-role`
+- Permissions to assume role: `arn:aws:iam::058264398399:role/projects/pollflow-bootstrap-terraform-role`
 
 ### Initial Deployment
 
@@ -381,7 +381,7 @@ terraform apply
 # Update kubeconfig to access EKS cluster
 aws eks update-kubeconfig \
   --region eu-west-3 \
-  --name cloudpollpro-eks
+  --name pollflow-eks
 
 # Verify connection
 kubectl get nodes
@@ -400,8 +400,8 @@ After Terraform completes:
 
 ### Role Assumption
 This project uses IAM role assumption instead of static access keys:
-- **Backend Role**: `cloudpollpro-bootstrap-terraform-role`
-- **External ID**: `cloudpollpro-bootstrap`
+- **Backend Role**: `pollflow-bootstrap-terraform-role`
+- **External ID**: `pollflow-bootstrap`
 - **Benefits**: Temporary credentials, CloudTrail audit logging, instant revocation capability
 
 See [README-SETUP.md](README-SETUP.md) for authentication details.
@@ -439,29 +439,29 @@ Current configuration optimized for development/learning:
 terraform state list
 
 # Check VPC
-aws ec2 describe-vpcs --filters "Name=tag:Name,Values=cloudpollpro-vpc"
+aws ec2 describe-vpcs --filters "Name=tag:Name,Values=pollflow-vpc"
 
 # Check EKS cluster
-aws eks describe-cluster --name cloudpollpro-eks --region eu-west-3
+aws eks describe-cluster --name pollflow-eks --region eu-west-3
 
 # Check ECR repositories
 aws ecr describe-repositories --region eu-west-3
 
 # Check RDS instance
-aws rds describe-db-instances --db-instance-identifier cloudpollpro-postgres
+aws rds describe-db-instances --db-instance-identifier pollflow-postgres
 
 # Check Secrets Manager
-aws secretsmanager get-secret-value --secret-id cloudpollpro-rds
+aws secretsmanager get-secret-value --secret-id pollflow-rds
 ```
 
 ## Troubleshooting
 
 ### "AccessDenied" errors
 - Ensure your AWS credentials have `sts:AssumeRole` permission
-- Verify external ID matches: `cloudpollpro-bootstrap`
+- Verify external ID matches: `pollflow-bootstrap`
 
 ### Terraform state locked
-- Check DynamoDB table: `cloudpollpro-terraform-state-lock`
+- Check DynamoDB table: `pollflow-terraform-state-lock`
 - Manually release lock if process crashed: `terraform force-unlock <lock-id>`
 
 ### EKS nodes not joining cluster
@@ -484,8 +484,8 @@ Each module has detailed documentation:
 
 ## State Management
 
-- **Backend**: S3 bucket `cloudpollpro-terraform-state`
-- **Locking**: DynamoDB table `cloudpollpro-terraform-state-lock`
+- **Backend**: S3 bucket `pollflow-terraform-state`
+- **Locking**: DynamoDB table `pollflow-terraform-state-lock`
 - **Region**: eu-west-3
 - **Encryption**: AES256
 

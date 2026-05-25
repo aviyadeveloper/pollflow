@@ -81,7 +81,7 @@ resource "local_file" "setup_info" {
   filename = "${var.main_project_path}/README-SETUP.md"
 
   content = <<-EOT
-# CloudPollPro Infrastructure Setup
+# Pollflow Infrastructure Setup
 
 ## Authentication
 

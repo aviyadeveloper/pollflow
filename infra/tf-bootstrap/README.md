@@ -1,10 +1,10 @@
-# Terraform Bootstrap - CloudPollPro
+# Terraform Bootstrap - Pollflow
 
-One-time setup to create the AWS foundation for the CloudPollPro project.
+One-time setup to create the AWS foundation for the Pollflow project.
 
 ## Summary
 
-The bootstrap module provisions the foundational AWS infrastructure required before deploying the main CloudPollPro resources. It establishes secure state management, IAM roles with least-privilege access, and CI/CD integration for GitHub Actions.
+The bootstrap module provisions the foundational AWS infrastructure required before deploying the main Pollflow resources. It establishes secure state management, IAM roles with least-privilege access, and CI/CD integration for GitHub Actions.
 
 **Key Components:**
 - **State Management**: S3 bucket with native state locking (encrypted, versioned)
@@ -44,8 +44,8 @@ graph TB
             
             subgraph ROLES["IAM Roles"]
                 direction TB
-                TERRAFORM_ROLE["🔐 Terraform Role<br/><b>cloudpollpro-terraform-role</b><br/><i>Full infrastructure management</i>"]
-                GITHUB_ROLE["🚀 GitHub Actions Role<br/><b>cloudpollpro-github-actions</b><br/><i>Read-only + EKS/ECR deploy</i>"]
+                TERRAFORM_ROLE["🔐 Terraform Role<br/><b>pollflow-terraform-role</b><br/><i>Full infrastructure management</i>"]
+                GITHUB_ROLE["🚀 GitHub Actions Role<br/><b>pollflow-github-actions</b><br/><i>Read-only + EKS/ECR deploy</i>"]
             end
             
             OIDC["🎫 OIDC Provider<br/><i>token.actions.githubusercontent.com</i>"]
@@ -120,7 +120,7 @@ graph TB
     subgraph AWS["☁️ AWS Resources"]
         direction TB
         
-        S3["🗄️ S3 Bucket<br/><b>cloudpollpro-terraform-state</b><br/><i>versioned, encrypted, native locking</i>"]
+        S3["🗄️ S3 Bucket<br/><b>pollflow-terraform-state</b><br/><i>versioned, encrypted, native locking</i>"]
     end
     
     subgraph TFMAIN["⚙️ tf-main (Main infrastructure)"]
@@ -187,7 +187,7 @@ graph TB
 
 **S3 Bucket for Remote State with Native Locking**
 
-- **Name**: `cloudpollpro-terraform-state-<account-id>`
+- **Name**: `pollflow-terraform-state-<account-id>`
 - **Versioning**: Enabled (protects against accidental deletions)
 - **Encryption**: AES256 server-side encryption
 - **Public Access**: Blocked (all 4 settings enabled)
@@ -200,11 +200,11 @@ graph TB
 
 **Dedicated Role for Infrastructure Management**
 
-- **Name**: `cloudpollpro-terraform-role`
+- **Name**: `pollflow-terraform-role`
 - **Path**: `/projects/`
 - **AssumeRole Policy**: 
   - Principal: Your admin user/role
-  - Condition: Requires external ID `cloudpollpro`
+  - Condition: Requires external ID `pollflow`
   - Provides: Temporary credentials (~12 hours)
 
 **Attached Policies:**
@@ -215,7 +215,7 @@ graph TB
 - **RDS Full Access**: Database instances, subnet groups, parameter groups
 - **ECR Full Access**: Repository management, image operations
 - **IAM Limited**: Create/manage roles and policies (scoped to project)
-- **Secrets Manager**: Create/manage secrets with `cloudpollpro-*` prefix
+- **Secrets Manager**: Create/manage secrets with `pollflow-*` prefix
 - **CloudWatch Logs**: Create log groups and streams
 
 **Why**: Least-privilege access with audit trail, no static credentials, instant revocability.
@@ -230,7 +230,7 @@ graph TB
 
 **GitHub Actions IAM Role**
 
-- **Name**: `cloudpollpro-github-actions`
+- **Name**: `pollflow-github-actions`
 - **Path**: `/ci/`
 - **AssumeRole Policy**:
   - Federated principal: GitHub OIDC provider
@@ -285,13 +285,13 @@ graph TB
 Edit `terraform.tfvars` or use CLI flags:
 
 ```hcl
-project_name       = "cloudpollpro"
+project_name       = "pollflow"
 aws_region         = "eu-west-3"
 main_project_path  = "../tf-main"
 
 # Optional: Enable GitHub Actions integration
 github_repo_owner  = "your-github-username"
-github_repo_name   = "cloudpollpro"
+github_repo_name   = "pollflow"
 ```
 
 ### Step 2: Bootstrap
@@ -316,20 +316,20 @@ cp terraform.tfstate terraform.tfstate.backup
 
 ```bash
 # Check S3 bucket created
-aws s3 ls | grep cloudpollpro-terraform-state
+aws s3 ls | grep pollflow-terraform-state
 
 # Verify bucket versioning and encryption
 aws s3api get-bucket-versioning \
-  --bucket cloudpollpro-terraform-state-$(aws sts get-caller-identity --query Account --output text)
+  --bucket pollflow-terraform-state-$(aws sts get-caller-identity --query Account --output text)
 
 aws s3api get-bucket-encryption \
-  --bucket cloudpollpro-terraform-state-$(aws sts get-caller-identity --query Account --output text)
+  --bucket pollflow-terraform-state-$(aws sts get-caller-identity --query Account --output text)
 
 # Test role assumption
 aws sts assume-role \
   --role-arn $(terraform output -raw role_arn) \
   --role-session-name test \
-  --external-id cloudpollpro
+  --external-id pollflow
 
 # Verify generated files
 ls -la ../tf-main/_generated*
@@ -383,7 +383,7 @@ terraform apply
 
 ### 🔒 External ID Security
 
-The external ID (`cloudpollpro`) prevents the "confused deputy" problem:
+The external ID (`pollflow`) prevents the "confused deputy" problem:
 - Ensures only authorized principals can assume the role
 - Acts as a shared secret between you and AWS
 - Required for every AssumeRole call
@@ -402,7 +402,7 @@ aws cloudtrail lookup-events \
 
 # View all actions by the role
 aws cloudtrail lookup-events \
-  --lookup-attributes AttributeKey=ResourceName,AttributeValue=cloudpollpro-terraform-role \
+  --lookup-attributes AttributeKey=ResourceName,AttributeValue=pollflow-terraform-role \
   --max-results 100
 ```
 
@@ -417,19 +417,19 @@ After applying, bootstrap provides:
 ```bash
 # Get role ARN for manual assumption
 terraform output role_arn
-# arn:aws:iam::058264398399:role/projects/cloudpollpro-terraform-role
+# arn:aws:iam::058264398399:role/projects/pollflow-terraform-role
 
 # Get role name
 terraform output role_name
-# cloudpollpro-terraform-role
+# pollflow-terraform-role
 
 # Get external ID (marked sensitive)
 terraform output external_id
-# cloudpollpro
+# pollflow
 
 # Get GitHub Actions role (if configured)
 terraform output github_actions_role_arn
-# arn:aws:iam::058264398399:role/ci/cloudpollpro-github-actions
+# arn:aws:iam::058264398399:role/ci/pollflow-github-actions
 ```
 
 ## Troubleshooting
@@ -444,7 +444,7 @@ terraform output github_actions_role_arn
 aws sts get-caller-identity
 
 # Check if you can assume the role
-aws iam get-role --role-name cloudpollpro-terraform-role
+aws iam get-role --role-name pollflow-terraform-role
 
 # Add AssumeRole permission to your user/role
 ```
@@ -455,11 +455,11 @@ aws iam get-role --role-name cloudpollpro-terraform-role
 
 **Solution**:
 ```bash
-# External ID must be: cloudpollpro
+# External ID must be: pollflow
 aws sts assume-role \
   --role-arn <role-arn> \
   --role-session-name test \
-  --external-id cloudpollpro  # Must match exactly
+  --external-id pollflow  # Must match exactly
 ```
 
 ### State file corrupted or lost
@@ -472,8 +472,8 @@ aws sts assume-role \
 cp terraform.tfstate.backup terraform.tfstate
 
 # Or import resources manually
-terraform import aws_s3_bucket.terraform_state cloudpollpro-terraform-state-<account-id>
-terraform import aws_iam_role.project_role cloudpollpro-terraform-role
+terraform import aws_s3_bucket.terraform_state pollflow-terraform-state-<account-id>
+terraform import aws_iam_role.project_role pollflow-terraform-role
 ```
 
 ### GitHub Actions can't authenticate
@@ -486,7 +486,7 @@ terraform import aws_iam_role.project_role cloudpollpro-terraform-role
 aws iam list-open-id-connect-providers
 
 # Check role trust policy
-aws iam get-role --role-name cloudpollpro-github-actions
+aws iam get-role --role-name pollflow-github-actions
 
 # Ensure repository condition matches: repo:<owner>/<repo>:*
 ```
@@ -545,6 +545,6 @@ After bootstrap completes successfully:
 1. ✅ **Verify** generated files in `../tf-main/`
 2. ✅ **Read** `../tf-main/README-SETUP.md` for usage instructions
 3. ✅ **Backup** `terraform.tfstate` file somewhere safe
-4. ✅ **Proceed** to `../tf-main/` to deploy CloudPollPro infrastructure
+4. ✅ **Proceed** to `../tf-main/` to deploy Pollflow infrastructure
 
 See [../tf-main/README.md](../tf-main/README.md) for infrastructure deployment guide.

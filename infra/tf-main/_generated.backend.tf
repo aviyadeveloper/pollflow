@@ -3,7 +3,7 @@
 
 terraform {
   backend "s3" {
-    bucket       = "cloudpollpro-terraform-state-058264398399"
+    bucket       = "pollflow-terraform-state-058264398399"
     key          = "terraform.tfstate"
     region       = "eu-west-3"
     use_lockfile = true

@@ -7,7 +7,7 @@
 module "ecr" {
   source = "./ecr"
 
-  project_name = "cloudpollpro"
+  project_name = "pollflow"
   region       = "us-east-1"
   repositories = ["voting-frontend", "results-frontend", "worker"]
   

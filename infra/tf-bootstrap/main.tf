@@ -1,8 +1,8 @@
 # ============================================================
-# CloudPollPro Bootstrap - Main Entry Point
+# Pollflow Bootstrap - Main Entry Point
 # ============================================================
 # 
-# This bootstrap creates the foundation for the CloudPollPro project:
+# This bootstrap creates the foundation for the Pollflow project:
 # - IAM role (no static credentials - uses AssumeRole)
 # - S3 bucket for Terraform state storage
 # - Auto-generated configuration files for main project

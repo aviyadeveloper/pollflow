@@ -5,7 +5,7 @@ module "external_secrets_irsa" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
   version = "~> 5.0"
 
-  role_name = "cloudpollpro-external-secrets"
+  role_name = "pollflow-external-secrets"
 
   # Policy for accessing AWS Secrets Manager
   role_policy_arns = {
@@ -20,7 +20,7 @@ module "external_secrets_irsa" {
   }
 
   tags = {
-    Name        = "cloudpollpro-external-secrets"
+    Name        = "pollflow-external-secrets"
     Environment = "dev"
     ManagedBy   = "terraform"
   }
@@ -28,7 +28,7 @@ module "external_secrets_irsa" {
 
 # IAM Policy for Secrets Manager access
 resource "aws_iam_policy" "external_secrets_policy" {
-  name        = "cloudpollpro-external-secrets-policy"
+  name        = "pollflow-external-secrets-policy"
   description = "Policy for External Secrets Operator to read from AWS Secrets Manager"
 
   policy = jsonencode({
@@ -40,7 +40,7 @@ resource "aws_iam_policy" "external_secrets_policy" {
           "secretsmanager:GetSecretValue",
           "secretsmanager:DescribeSecret"
         ]
-        Resource = "arn:aws:secretsmanager:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:secret:cloudpollpro-*"
+        Resource = "arn:aws:secretsmanager:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:secret:pollflow-*"
       },
       {
         Effect = "Allow"
@@ -54,7 +54,7 @@ resource "aws_iam_policy" "external_secrets_policy" {
   })
 
   tags = {
-    Name        = "cloudpollpro-external-secrets-policy"
+    Name        = "pollflow-external-secrets-policy"
     Environment = "dev"
     ManagedBy   = "terraform"
   }

@@ -3,7 +3,7 @@
 # EKS Deployment Status Checker
 # Usage: ./check-eks-status.sh
 
-CLUSTER_NAME="cloudpollpro-cluster"
+CLUSTER_NAME="pollflow-cluster"
 REGION="eu-west-3"
 
 # Colors

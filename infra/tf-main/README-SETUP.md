@@ -1,4 +1,4 @@
-# CloudPollPro Infrastructure Setup
+# Pollflow Infrastructure Setup
 
 ## Authentication
 
@@ -7,7 +7,7 @@ This project uses **IAM role assumption** instead of static access keys for enha
 ### Prerequisites
 
 - AWS CLI configured with admin credentials
-- Permissions to assume role: \`arn:aws:iam::058264398399:role/projects/cloudpollpro-bootstrap-terraform-role\`
+- Permissions to assume role: \`arn:aws:iam::058264398399:role/projects/pollflow-bootstrap-terraform-role\`
 
 ### How It Works
 
@@ -20,9 +20,9 @@ This project uses **IAM role assumption** instead of static access keys for enha
 \`\`\`bash
 # Verify you can assume the role
 aws sts assume-role \\
-  --role-arn arn:aws:iam::058264398399:role/projects/cloudpollpro-bootstrap-terraform-role \\
+  --role-arn arn:aws:iam::058264398399:role/projects/pollflow-bootstrap-terraform-role \\
   --role-session-name terraform-test \\
-  --external-id cloudpollpro-bootstrap
+  --external-id pollflow-bootstrap
 
 # If successful, proceed with terraform
 terraform init
@@ -32,16 +32,16 @@ terraform apply
 
 ### Role Details
 
-- **Role ARN**: \`arn:aws:iam::058264398399:role/projects/cloudpollpro-bootstrap-terraform-role\`
-- **Role Name**: \`cloudpollpro-bootstrap-terraform-role\`
-- **External ID**: \`cloudpollpro-bootstrap\` (for additional security)
+- **Role ARN**: \`arn:aws:iam::058264398399:role/projects/pollflow-bootstrap-terraform-role\`
+- **Role Name**: \`pollflow-bootstrap-terraform-role\`
+- **External ID**: \`pollflow-bootstrap\` (for additional security)
 - **Session Name**: \`terraform-<workspace>\`
 
 ### Troubleshooting
 
 **Error: "AccessDenied"**
 - Ensure your current AWS credentials have \`sts:AssumeRole\` permission
-- Verify the external ID matches: \`cloudpollpro-bootstrap\`
+- Verify the external ID matches: \`pollflow-bootstrap\`
 
 **Error: "InvalidClientTokenId"**
 - Check your AWS CLI configuration: \`aws sts get-caller-identity\`

@@ -17,7 +17,7 @@ content: |-
   module "rds" {
     source = "./rds"
 
-    project_name                = "cloudpollpro"
+    project_name                = "pollflow"
     region                      = "us-east-1"
     vpc_id                      = module.vpc.vpc_id
     private_subnet_ids          = module.vpc.private_subnets
@@ -25,8 +25,8 @@ content: |-
     bastion_security_group_id   = module.bastion.security_group_id
     
     # Database configuration
-    database_name     = "cloudpollpro"
-    database_username = "cloudpollpro"
+    database_name     = "pollflow"
+    database_username = "pollflow"
     instance_class    = "db.t3.micro"
     engine_version    = "16.3"
     

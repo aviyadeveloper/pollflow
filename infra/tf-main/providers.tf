@@ -20,7 +20,7 @@ provider "helm" {
       ]
       # Uses ambient AWS credentials (user's profile), not Terraform's assumed role
       env = {
-        AWS_PROFILE = "cloudpollpro"
+        AWS_PROFILE = "pollflow"
       }
     }
   }

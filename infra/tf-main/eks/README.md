@@ -17,7 +17,7 @@
 module "eks" {
   source = "./eks"
 
-  project_name       = "cloudpollpro"
+  project_name       = "pollflow"
   kubernetes_version = "1.31"
   
   vpc_id             = module.vpc.vpc_id

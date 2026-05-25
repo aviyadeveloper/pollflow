@@ -1,10 +1,10 @@
-# CloudPollPro
+# Pollflow
 
 A cloud-native microservices voting application deployed on AWS EKS, demonstrating modern infrastructure as code, Kubernetes orchestration, and secure CI/CD practices.
 
 ## Summary
 
-CloudPollPro is an educational project showcasing end-to-end cloud infrastructure deployment using Terraform and Kubernetes. The application allows users to vote between two options, with votes processed asynchronously and results displayed in real-time.
+Pollflow is an educational project showcasing end-to-end cloud infrastructure deployment using Terraform and Kubernetes. The application allows users to vote between two options, with votes processed asynchronously and results displayed in real-time.
 
 **Key Features:**
 - **Infrastructure as Code**: Complete AWS infrastructure managed with Terraform (VPC, EKS, RDS, ECR)
@@ -145,7 +145,7 @@ graph TB
 ## Project Structure
 
 ```
-cloudpollpro/
+pollflow/
 ├── infra/
 │   ├── tf-bootstrap/       # One-time AWS setup (S3 state, IAM, OIDC)
 │   ├── tf-main/            # Main infrastructure (VPC, EKS, RDS, ECR)
@@ -179,7 +179,7 @@ terraform init
 terraform apply
 
 # Backup the state file
-cp terraform.tfstate ~/cloudpollpro-bootstrap.tfstate.backup
+cp terraform.tfstate ~/pollflow-bootstrap.tfstate.backup
 ```
 
 See [tf-bootstrap/README.md](infra/tf-bootstrap/README.md) for detailed setup.
@@ -203,7 +203,7 @@ See [tf-main/README.md](infra/tf-main/README.md) for module details and configur
 
 ```bash
 # Configure kubectl
-aws eks update-kubeconfig --name cloudpollpro-eks-cluster --region eu-west-3
+aws eks update-kubeconfig --name pollflow-eks-cluster --region eu-west-3
 
 # Apply Kubernetes manifests
 kubectl apply -f k8s/storage/

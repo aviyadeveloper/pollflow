@@ -55,13 +55,13 @@ variable "instance_class" {
 variable "database_name" {
   description = "Name of the database to create"
   type        = string
-  default     = "cloudpollpro"
+  default     = "pollflow"
 }
 
 variable "database_username" {
   description = "Master username for the database"
   type        = string
-  default     = "cloudpollpro"
+  default     = "pollflow"
 }
 
 # ============================================================================

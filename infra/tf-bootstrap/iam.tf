@@ -60,8 +60,8 @@ resource "aws_iam_role_policy" "s3_policy" {
           "s3:DeleteObject"
         ]
         Resource = [
-          "arn:aws:s3:::cloudpollpro*",
-          "arn:aws:s3:::cloudpollpro*/*"
+          "arn:aws:s3:::pollflow*",
+          "arn:aws:s3:::pollflow*/*"
         ]
       }
     ]
@@ -173,11 +173,11 @@ resource "aws_iam_role_policy" "iam_role_management" {
           "iam:ListPolicyVersions"
         ]
         Resource = [
-          "arn:aws:iam::*:role/cloudpollpro*",
-          "arn:aws:iam::*:role/projects/cloudpollpro*",
+          "arn:aws:iam::*:role/pollflow*",
+          "arn:aws:iam::*:role/projects/pollflow*",
           "arn:aws:iam::*:role/aws-service-role/*",
-          "arn:aws:iam::*:instance-profile/cloudpollpro*",
-          "arn:aws:iam::*:policy/cloudpollpro*",
+          "arn:aws:iam::*:instance-profile/pollflow*",
+          "arn:aws:iam::*:policy/pollflow*",
           "arn:aws:iam::*:policy/AmazonEKS_EBS_CSI_Policy*",
           "arn:aws:iam::*:oidc-provider/*",
           "arn:aws:iam::aws:policy/*"

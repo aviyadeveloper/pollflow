@@ -21,60 +21,60 @@ spec:
         app: result
     spec:
       containers:
-      - name: result
-        image: 058264398399.dkr.ecr.eu-west-3.amazonaws.com/cloudpollpro-result:latest
-        ports:
-        - containerPort: 80
-          protocol: TCP
-        env:
-        - name: PORT
-          value: "80"
-        - name: PG_HOST
-          valueFrom:
-            secretKeyRef:
-              name: rds-credentials
-              key: host
-        - name: PG_PORT
-          valueFrom:
-            secretKeyRef:
-              name: rds-credentials
-              key: port
-        - name: PG_USER
-          valueFrom:
-            secretKeyRef:
-              name: rds-credentials
-              key: username
-        - name: PG_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: rds-credentials
-              key: password
-        - name: PG_DATABASE
-          valueFrom:
-            secretKeyRef:
-              name: rds-credentials
-              key: dbname
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "200m"
-          limits:
-            memory: "512Mi"
-            cpu: "400m"
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 80
-          initialDelaySeconds: 5
-          periodSeconds: 5
-          timeoutSeconds: 3
-          successThreshold: 1
-          failureThreshold: 3
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 80
-          initialDelaySeconds: 15
-          periodSeconds: 10
-          timeoutSeconds: 3
-          failureThreshold: 3
+        - name: result
+          image: 058264398399.dkr.ecr.eu-west-3.amazonaws.com/pollflow-result:latest
+          ports:
+            - containerPort: 80
+              protocol: TCP
+          env:
+            - name: PORT
+              value: "80"
+            - name: PG_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: rds-credentials
+                  key: host
+            - name: PG_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: rds-credentials
+                  key: port
+            - name: PG_USER
+              valueFrom:
+                secretKeyRef:
+                  name: rds-credentials
+                  key: username
+            - name: PG_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: rds-credentials
+                  key: password
+            - name: PG_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: rds-credentials
+                  key: dbname
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "400m"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3

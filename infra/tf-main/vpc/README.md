@@ -15,7 +15,7 @@
 module "vpc" {
   source = "./vpc"
 
-  project_name = "cloudpollpro"
+  project_name = "pollflow"
   region       = "eu-west-3"
 
   # Optional: customize CIDR ranges

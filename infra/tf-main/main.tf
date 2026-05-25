@@ -67,8 +67,8 @@ module "rds" {
   bastion_security_group_id  = module.bastion.security_group_id
 
   # Database configuration
-  database_name     = "cloudpollpro"
-  database_username = "cloudpollpro"
+  database_name     = "pollflow"
+  database_username = "pollflow"
 
   tags = {
     Project   = var.project_name

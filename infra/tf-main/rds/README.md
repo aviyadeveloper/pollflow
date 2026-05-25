@@ -7,7 +7,7 @@
 module "rds" {
   source = "./rds"
 
-  project_name                = "cloudpollpro"
+  project_name                = "pollflow"
   region                      = "us-east-1"
   vpc_id                      = module.vpc.vpc_id
   private_subnet_ids          = module.vpc.private_subnets
@@ -15,8 +15,8 @@ module "rds" {
   bastion_security_group_id   = module.bastion.security_group_id
   
   # Database configuration
-  database_name     = "cloudpollpro"
-  database_username = "cloudpollpro"
+  database_name     = "pollflow"
+  database_username = "pollflow"
   instance_class    = "db.t3.micro"
   engine_version    = "16.3"
   
@@ -62,8 +62,8 @@ No requirements.
 | <a name="input_backup_retention_period"></a> [backup\_retention\_period](#input\_backup\_retention\_period) | Number of days to retain backups | `number` | `7` | no |
 | <a name="input_backup_window"></a> [backup\_window](#input\_backup\_window) | Preferred backup window (UTC) | `string` | `"03:00-04:00"` | no |
 | <a name="input_bastion_security_group_id"></a> [bastion\_security\_group\_id](#input\_bastion\_security\_group\_id) | Security group ID of bastion host (for allowing database access) | `string` | n/a | yes |
-| <a name="input_database_name"></a> [database\_name](#input\_database\_name) | Name of the database to create | `string` | `"cloudpollpro"` | no |
-| <a name="input_database_username"></a> [database\_username](#input\_database\_username) | Master username for the database | `string` | `"cloudpollpro"` | no |
+| <a name="input_database_name"></a> [database\_name](#input\_database\_name) | Name of the database to create | `string` | `"pollflow"` | no |
+| <a name="input_database_username"></a> [database\_username](#input\_database\_username) | Master username for the database | `string` | `"pollflow"` | no |
 | <a name="input_deletion_protection"></a> [deletion\_protection](#input\_deletion\_protection) | Enable deletion protection (recommended for production) | `bool` | `false` | no |
 | <a name="input_eks_node_security_group_id"></a> [eks\_node\_security\_group\_id](#input\_eks\_node\_security\_group\_id) | Security group ID of EKS nodes (for allowing database access) | `string` | n/a | yes |
 | <a name="input_engine_version"></a> [engine\_version](#input\_engine\_version) | PostgreSQL engine version | `string` | `"16.13"` | no |

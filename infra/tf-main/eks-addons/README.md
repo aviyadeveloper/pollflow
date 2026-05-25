@@ -20,7 +20,7 @@
 - IAM role for External Secrets Operator to read AWS Secrets Manager
 - Service account: `external-secrets` in `external-secrets-system` namespace
 - IAM permissions: `secretsmanager:GetSecretValue`, `secretsmanager:DescribeSecret`
-- Scoped to secrets with prefix `cloudpollpro-*`
+- Scoped to secrets with prefix `pollflow-*`
 
 ## Usage
 
@@ -28,7 +28,7 @@
 module "eks_addons" {
   source = "./eks-addons"
 
-  project_name      = "cloudpollpro"
+  project_name      = "pollflow"
   cluster_name      = module.eks.cluster_name
   oidc_provider_arn = module.eks.oidc_provider_arn
 }
