@@ -2,3 +2,19 @@
 .temp
 
 *.env
+
+# Go binaries (poll-broker)
+services/poll-broker/poll-broker
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Go test coverage
+*.out
+coverage.txt
+
+# Database backups/dumps
+*.sql.gz
+*.dump
+*.backup
