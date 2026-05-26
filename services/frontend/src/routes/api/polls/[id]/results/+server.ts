@@ -43,8 +43,16 @@ export const GET: RequestHandler = async ({ params }) => {
 
             const data = `data: ${JSON.stringify(results)}\n\n`;
             controller.enqueue(encoder.encode(data));
-          } catch (error) {
-            console.error("Error parsing/sending results:", error);
+          } catch (error: any) {
+            // If controller is closed, clean up the subscriber
+            if (error?.code === 'ERR_INVALID_STATE' || error?.message?.includes('Controller is already closed')) {
+              console.log(`Controller closed for poll ${pollId}, cleaning up subscriber`);
+              if ((controller as any)._cleanup) {
+                (controller as any)._cleanup();
+              }
+            } else {
+              console.error("Error parsing/sending results:", error);
+            }
           }
         }
       });
@@ -58,9 +66,13 @@ export const GET: RequestHandler = async ({ params }) => {
       const heartbeat = setInterval(() => {
         try {
           controller.enqueue(encoder.encode(": heartbeat\n\n"));
-        } catch (error) {
-          // Controller closed, stop heartbeat
+        } catch (error: any) {
+          // Controller closed, clean up and stop heartbeat
+          console.log(`Heartbeat detected closed controller for poll ${pollId}, cleaning up`);
           clearInterval(heartbeat);
+          if ((controller as any)._cleanup) {
+            (controller as any)._cleanup();
+          }
         }
       }, 30000); // Every 30 seconds
 
