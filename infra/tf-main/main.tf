@@ -19,7 +19,7 @@ module "ecr" {
 
   project_name = var.project_name
   region       = var.region
-  repositories = ["vote", "result", "worker"]
+  repositories = ["frontend", "poll-broker"]
   tags = {
     Project   = var.project_name
     ManagedBy = "terraform"

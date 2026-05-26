@@ -9,7 +9,7 @@ module "ecr" {
 
   project_name = "pollflow"
   region       = "us-east-1"
-  repositories = ["voting-frontend", "results-frontend", "worker"]
+  repositories = ["frontend", "poll-broker"]
   
   tags = {
     Environment = "dev"
@@ -36,7 +36,7 @@ No requirements.
 | <a name="input_lifecycle_policy_keep_count"></a> [lifecycle\_policy\_keep\_count](#input\_lifecycle\_policy\_keep\_count) | Number of images to keep in repository | `number` | `3` | no |
 | <a name="input_project_name"></a> [project\_name](#input\_project\_name) | The name of the project | `string` | n/a | yes |
 | <a name="input_region"></a> [region](#input\_region) | The AWS region to deploy resources in | `string` | n/a | yes |
-| <a name="input_repositories"></a> [repositories](#input\_repositories) | List of ECR repository names to create | `list(string)` | <pre>[<br/>  "voting-frontend",<br/>  "results-frontend",<br/>  "worker"<br/>]</pre> | no |
+| <a name="input_repositories"></a> [repositories](#input\_repositories) | List of ECR repository names to create | `list(string)` | <pre>[<br/>  "frontend",<br/>  "poll-broker"<br/>]</pre> | no |
 | <a name="input_scan_on_push"></a> [scan\_on\_push](#input\_scan\_on\_push) | Indicates whether images are scanned after being pushed to the repository | `bool` | `true` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | Additional tags for ECR resources | `map(string)` | `{}` | no |
 

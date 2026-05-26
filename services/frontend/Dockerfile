@@ -17,18 +17,18 @@ ARG REDIS_PORT
 ARG REDIS_PASSWORD
 
 # Copy package configuration files
-COPY services/frontend/pnpm-workspace.yaml ./pnpm-workspace.yaml
-COPY services/frontend/pnpm-lock.yaml ./pnpm-lock.yaml
-COPY services/frontend/package.json ./package.json
+COPY pnpm-workspace.yaml ./pnpm-workspace.yaml
+COPY pnpm-lock.yaml ./pnpm-lock.yaml
+COPY package.json ./package.json
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile
 
 # Copy source code
-COPY services/frontend/src ./src
-COPY services/frontend/svelte.config.js ./svelte.config.js
-COPY services/frontend/tsconfig.json ./tsconfig.json
-COPY services/frontend/vite.config.ts ./vite.config.ts
+COPY src ./src
+COPY svelte.config.js ./svelte.config.js
+COPY tsconfig.json ./tsconfig.json
+COPY vite.config.ts ./vite.config.ts
 
 # Set environment variables from build args (required by SvelteKit SSR analysis)
 ENV POSTGRES_HOST=${POSTGRES_HOST}
@@ -52,9 +52,9 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
 
 # Copy workspace configuration and package files
-COPY services/frontend/pnpm-workspace.yaml ./pnpm-workspace.yaml
-COPY services/frontend/pnpm-lock.yaml ./pnpm-lock.yaml
-COPY services/frontend/package.json ./
+COPY pnpm-workspace.yaml ./pnpm-workspace.yaml
+COPY pnpm-lock.yaml ./pnpm-lock.yaml
+COPY package.json ./
 
 # Install production dependencies only
 RUN pnpm install --prod --frozen-lockfile

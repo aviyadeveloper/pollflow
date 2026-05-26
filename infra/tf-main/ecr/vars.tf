@@ -11,7 +11,7 @@ variable "region" {
 variable "repositories" {
   description = "List of ECR repository names to create"
   type        = list(string)
-  default     = ["voting-frontend", "results-frontend", "worker"]
+  default     = ["frontend", "poll-broker"]
 }
 
 variable "image_tag_mutability" {

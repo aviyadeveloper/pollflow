@@ -104,6 +104,9 @@ resource "helm_release" "alb_controller" {
   namespace  = "kube-system"
   version    = var.alb_controller_version
 
+  # Wait for all resources to be ready before marking complete
+  wait = true
+
   set = [
     {
       name  = "clusterName"
