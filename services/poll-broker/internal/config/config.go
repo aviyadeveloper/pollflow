@@ -91,7 +91,7 @@ func (c *Config) Validate() error {
 // Username and password are URL-encoded to handle special characters
 func (c *Config) DatabaseURL() string {
 	return fmt.Sprintf(
-		"postgres://%s:%s@%s:%d/%s?sslmode=disable",
+		"postgres://%s:%s@%s:%d/%s?sslmode=require",
 		url.PathEscape(c.Database.User),
 		url.PathEscape(c.Database.Password),
 		c.Database.Host,
