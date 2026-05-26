@@ -1,11 +1,11 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: result
+  name: frontend
   labels:
-    app: result
+    app: frontend
 spec:
-  replicas: 2
+  replicas: 3
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -14,46 +14,63 @@ spec:
   revisionHistoryLimit: 10
   selector:
     matchLabels:
-      app: result
+      app: frontend
   template:
     metadata:
       labels:
-        app: result
+        app: frontend
     spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: frontend
+                topologyKey: topology.kubernetes.io/zone
       containers:
-        - name: result
-          image: 058264398399.dkr.ecr.eu-west-3.amazonaws.com/pollflow-result:latest
+        - name: frontend
+          image: 058264398399.dkr.ecr.eu-west-3.amazonaws.com/pollflow-frontend:latest
           ports:
-            - containerPort: 80
+            - containerPort: 3000
               protocol: TCP
           env:
+            - name: NODE_ENV
+              value: "production"
             - name: PORT
-              value: "80"
-            - name: PG_HOST
+              value: "3000"
+            - name: POSTGRES_HOST
               valueFrom:
                 secretKeyRef:
                   name: rds-credentials
                   key: host
-            - name: PG_PORT
+            - name: POSTGRES_PORT
               valueFrom:
                 secretKeyRef:
                   name: rds-credentials
                   key: port
-            - name: PG_USER
+            - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
                   name: rds-credentials
                   key: username
-            - name: PG_PASSWORD
+            - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: rds-credentials
                   key: password
-            - name: PG_DATABASE
+            - name: POSTGRES_DB
               valueFrom:
                 secretKeyRef:
                   name: rds-credentials
                   key: dbname
+            - name: REDIS_HOST
+              value: "redis-primary"
+            - name: REDIS_PORT
+              value: "6379"
+            - name: REDIS_PASSWORD
+              value: ""
           resources:
             requests:
               memory: "256Mi"
@@ -63,8 +80,8 @@ spec:
               cpu: "400m"
           readinessProbe:
             httpGet:
-              path: /health
-              port: 80
+              path: /
+              port: 3000
             initialDelaySeconds: 5
             periodSeconds: 5
             timeoutSeconds: 3
@@ -72,8 +89,8 @@ spec:
             failureThreshold: 3
           livenessProbe:
             httpGet:
-              path: /health
-              port: 80
+              path: /
+              port: 3000
             initialDelaySeconds: 15
             periodSeconds: 10
             timeoutSeconds: 3

@@ -50,3 +50,78 @@ rm terraform-docs.tar.gz
 # Verify
 terraform-docs --version
 ```
+
+---
+
+## migrate-rds-schema.sh
+
+Database migration script for applying the new PollFlow schema to AWS RDS.
+
+### What it does:
+
+1. **Retrieves** RDS endpoint from Terraform outputs
+2. **Checks** existing schema and warns about data loss
+3. **Drops** old tables (if migrating from old single-poll architecture)
+4. **Applies** new multi-poll schema (`services/database/schema.sql`)
+5. **Optionally** applies seed data for testing
+
+### Usage:
+
+**Before running:**
+- Ensure Terraform infrastructure is deployed (`make infra-main`)
+- Have database credentials ready (from AWS Secrets Manager)
+
+**Run the migration:**
+```bash
+./scripts/migrate-rds-schema.sh
+```
+
+**The script will prompt for:**
+- Database username (default: pollflow)
+- Database password
+- Database name (default: pollflow)
+- Confirmation before dropping tables
+- Whether to apply seed data
+
+### When to use:
+
+- **Migrating from old architecture**: Transitioning from vote/result/worker services to poll-broker/frontend
+- **Fresh deployment**: Setting up schema on new RDS instance
+- **Schema updates**: Reapplying schema after changes
+
+### Requirements:
+
+- `psql` (PostgreSQL client) installed
+- Terraform infrastructure deployed
+- Network access to RDS (via bastion or VPN)
+- Database credentials from AWS Secrets Manager
+
+### Getting database credentials:
+
+```bash
+# Retrieve from Secrets Manager
+aws secretsmanager get-secret-value \
+  --secret-id pollflow-rds-credentials \
+  --region eu-west-3 \
+  --query SecretString \
+  --output text | jq -r '.password'
+```
+
+### Important notes:
+
+⚠️ **WARNING**: This script will DROP existing tables and ALL DATA will be lost!
+
+- Always backup production databases before running
+- For production, consider using proper migration tools (Flyway, golang-migrate)
+- Seed data is for development/testing only - do not use in production
+
+### Troubleshooting:
+
+**Connection refused:**
+- Ensure you're connected via bastion host or have RDS security group access
+- Check RDS endpoint is correct: `make bastion-ssh`
+
+**Authentication failed:**
+- Verify credentials from Secrets Manager
+- Ensure database user has CREATE/DROP privileges
+

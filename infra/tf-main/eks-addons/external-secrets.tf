@@ -81,6 +81,9 @@ resource "helm_release" "external_secrets" {
     }
   ]
 
-  # Ensure IAM role is created before Helm release
-  depends_on = [module.external_secrets_irsa]
+  # ALB controller must be fully ready (wait=true ensures this)
+  depends_on = [
+    module.external_secrets_irsa,
+    helm_release.alb_controller
+  ]
 }

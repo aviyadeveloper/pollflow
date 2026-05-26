@@ -25,15 +25,12 @@ jobs:
     strategy:
       matrix:
         service:
-          - name: vote
-            context: ./services/vote
-            image: pollflow-vote
-          - name: result
-            context: ./services/result
-            image: pollflow-result
-          - name: worker
-            context: ./services/worker
-            image: pollflow-worker
+          - name: frontend
+            context: ./services/frontend
+            image: pollflow-frontend
+          - name: poll-broker
+            context: ./services/poll-broker
+            image: pollflow-poll-broker
 
     outputs:
       image-tag: ${{ steps.image-tag.outputs.tag }}
@@ -100,27 +97,26 @@ jobs:
           IMAGE_TAG: ${{ needs.build.outputs.image-tag }}
         run: |
           # Update image tags in deployment manifests
-          sed -i "s|image: .*pollflow-vote.*|image: $ECR_REGISTRY/pollflow-vote:$IMAGE_TAG|g" k8s/apps/vote/deployment.yaml
-          sed -i "s|image: .*pollflow-result.*|image: $ECR_REGISTRY/pollflow-result:$IMAGE_TAG|g" k8s/apps/result/deployment.yaml
-          sed -i "s|image: .*pollflow-worker.*|image: $ECR_REGISTRY/pollflow-worker:$IMAGE_TAG|g" k8s/apps/worker/deployment.yaml
+          sed -i "s|image: .*pollflow-frontend.*|image: $ECR_REGISTRY/pollflow-frontend:$IMAGE_TAG|g" k8s/apps/frontend/deployment.yaml
+          sed -i "s|image: .*pollflow-poll-broker.*|image: $ECR_REGISTRY/pollflow-poll-broker:$IMAGE_TAG|g" k8s/apps/poll-broker/deployment.yaml
 
       - name: Deploy to EKS
         run: |
           echo "Applying Kubernetes manifests..."
           kubectl apply -R -f k8s/apps/
+          kubectl apply -f k8s/ingress/frontend-ingress.yaml
 
       - name: Wait for rollouts
         run: |
           echo "Waiting for deployments to complete..."
-          kubectl rollout status deployment/vote --timeout=5m
-          kubectl rollout status deployment/result --timeout=5m
-          kubectl rollout status deployment/worker --timeout=5m
+          kubectl rollout status deployment/frontend --timeout=5m
+          kubectl rollout status deployment/poll-broker --timeout=5m
 
       - name: Verify deployments
         run: |
           echo "Deployment status:"
-          kubectl get deployments -l 'app in (vote,result,worker)'
-          kubectl get pods -l 'app in (vote,result,worker)'
+          kubectl get deployments -l 'app in (frontend,poll-broker)'
+          kubectl get pods -l 'app in (frontend,poll-broker)'
 
       - name: Show deployment summary
         if: always()
@@ -130,4 +126,4 @@ jobs:
           echo "- **Image Tag**: ${{ needs.build.outputs.image-tag }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Deployments" >> $GITHUB_STEP_SUMMARY
-          kubectl get deployments -l 'app in (vote,result,worker)' >> $GITHUB_STEP_SUMMARY || true
+          kubectl get deployments -l 'app in (frontend,poll-broker)' >> $GITHUB_STEP_SUMMARY || true

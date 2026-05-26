@@ -14,7 +14,7 @@ Pollflow's infrastructure is fully automated with Terraform, deploying a product
 
 **Data & Security:**
 - **RDS PostgreSQL**: Multi-AZ db.t3.micro (16.3) with automatic backups and encryption at rest
-- **ECR**: Private container registries for vote, result, and worker images
+- **ECR**: Private container registries for frontend and poll-broker images
 - **Secrets Manager**: Secure storage for RDS credentials, synced to Kubernetes via External Secrets Operator
 - **IAM Roles**: IRSA (IAM Roles for Service Accounts) for EBS CSI Driver, External Secrets, and AWS Load Balancer Controller
 
@@ -150,9 +150,8 @@ graph TB
     
     subgraph REGISTRY["📦 Container Registry"]
         direction TB
-        ECR_VOTE["🐳 ECR: pollflow-vote"]
-        ECR_RESULT["🐳 ECR: pollflow-result"]
-        ECR_WORKER["🐳 ECR: pollflow-worker"]
+        ECR_FRONTEND["🐳 ECR: pollflow-frontend"]
+        ECR_BROKER["🐳 ECR: pollflow-poll-broker"]
     end
     
     subgraph IAM["🔑 IAM Security (IRSA)"]
@@ -181,9 +180,8 @@ graph TB
     PODS -->|connects via secret| RDS_PRIMARY
     
     %% ECR image pulls
-    ECR_VOTE -.->|pulled by| PODS
-    ECR_RESULT -.->|pulled by| PODS
-    ECR_WORKER -.->|pulled by| PODS
+    ECR_FRONTEND -.->|pulled by| PODS
+    ECR_BROKER -.->|pulled by| PODS
     
     %% IRSA pattern
     OIDC -->|federates| ROLES
@@ -204,7 +202,7 @@ graph TB
     classDef oidcStyle fill:#3B82F6,stroke:#2563EB,stroke-width:2px,color:#fff
     
     class RDS_PRIMARY,RDS_STANDBY,SM dataStyle
-    class ECR_VOTE,ECR_RESULT,ECR_WORKER registryStyle
+    class ECR_FRONTEND,ECR_BROKER registryStyle
     class EBS_ROLE,ESO_ROLE,ALB_ROLE iamStyle
     class PODS,CSI,ESO,ALBC workloadStyle
     class OIDC oidcStyle
@@ -246,7 +244,7 @@ graph TB
 
 **Private Container Registries**
 
-- **Repositories**: `pollflow-vote`, `pollflow-result`, `pollflow-worker`
+- **Repositories**: `pollflow-frontend`, `pollflow-poll-broker`
 - **Image Scanning**: Enabled on push
 - **Encryption**: AES256 at rest
 - **Lifecycle Policy**: Keeps last 10 images per repository
