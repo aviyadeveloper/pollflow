@@ -3,7 +3,7 @@
 
 # Workspace packages
 packages:
-  - 'services/frontend'
+  - "."
 
 # Security settings
 minimumReleaseAge: 10080  # 7 days in minutes (1440 = 1 day, 10080 = 7 days)
