@@ -6,16 +6,6 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /app
 
-# Build arguments for environment variables needed during build
-ARG POSTGRES_HOST
-ARG POSTGRES_PORT
-ARG POSTGRES_DB
-ARG POSTGRES_USER
-ARG POSTGRES_PASSWORD
-ARG REDIS_HOST
-ARG REDIS_PORT
-ARG REDIS_PASSWORD
-
 # Copy package configuration files
 COPY pnpm-workspace.yaml ./pnpm-workspace.yaml
 COPY pnpm-lock.yaml ./pnpm-lock.yaml
@@ -30,17 +20,7 @@ COPY svelte.config.js ./svelte.config.js
 COPY tsconfig.json ./tsconfig.json
 COPY vite.config.ts ./vite.config.ts
 
-# Set environment variables from build args (required by SvelteKit SSR analysis)
-ENV POSTGRES_HOST=${POSTGRES_HOST}
-ENV POSTGRES_PORT=${POSTGRES_PORT}
-ENV POSTGRES_DB=${POSTGRES_DB}
-ENV POSTGRES_USER=${POSTGRES_USER}
-ENV POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-ENV REDIS_HOST=${REDIS_HOST}
-ENV REDIS_PORT=${REDIS_PORT}
-ENV REDIS_PASSWORD=${REDIS_PASSWORD}
-
-# Build the application
+# Build the application (no env vars needed - connections are lazy)
 RUN pnpm run build
 
 # Production stage

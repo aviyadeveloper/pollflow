@@ -1,7 +1,7 @@
 import { Pool } from "pg";
 import type { Poll } from "$lib/types";
 
-// Validate required environment variables
+// Validate required environment variables (only when actually needed)
 function getEnvVar(name: string): string {
   const value = process.env[name];
   if (!value) {
@@ -10,25 +10,32 @@ function getEnvVar(name: string): string {
   return value;
 }
 
-// PostgreSQL connection pool
-const pool = new Pool({
-  host: getEnvVar("POSTGRES_HOST"),
-  port: parseInt(getEnvVar("POSTGRES_PORT")),
-  database: getEnvVar("POSTGRES_DB"),
-  user: getEnvVar("POSTGRES_USER"),
-  password: getEnvVar("POSTGRES_PASSWORD"),
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-});
+// Lazy connection pool - created on first use
+let pool: Pool | null = null;
 
-pool.on("connect", () => {
-  console.log("✓ PostgreSQL connected");
-});
+function getPool(): Pool {
+  if (!pool) {
+    pool = new Pool({
+      host: getEnvVar("POSTGRES_HOST"),
+      port: parseInt(getEnvVar("POSTGRES_PORT")),
+      database: getEnvVar("POSTGRES_DB"),
+      user: getEnvVar("POSTGRES_USER"),
+      password: getEnvVar("POSTGRES_PASSWORD"),
+      max: 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 2000,
+    });
 
-pool.on("error", (err: Error) => {
-  console.error("PostgreSQL pool error:", err);
-});
+    pool.on("connect", () => {
+      console.log("✓ PostgreSQL connected");
+    });
+
+    pool.on("error", (err: Error) => {
+      console.error("PostgreSQL pool error:", err);
+    });
+  }
+  return pool;
+}
 
 /**
  * Get all polls with vote counts ordered by active status first, then closing time
@@ -57,7 +64,7 @@ export async function getAllPolls(): Promise<Poll[]> {
       p.end_time ASC
   `;
 
-  const result = await pool.query(query);
+  const result = await getPool().query(query);
 
   return result.rows.map((row) => ({
     ...row,
@@ -90,7 +97,7 @@ export async function getPollResults(pollId: number): Promise<{
     WHERE poll_id = $1
   `;
 
-  const result = await pool.query(query, [pollId]);
+  const result = await getPool().query(query, [pollId]);
 
   if (result.rows.length === 0) {
     return null;
@@ -108,8 +115,11 @@ export async function getPollResults(pollId: number): Promise<{
  * Close the connection pool (for graceful shutdown)
  */
 export async function closePool(): Promise<void> {
-  await pool.end();
-  console.log("PostgreSQL pool closed");
+  if (pool) {
+    await pool.end();
+    pool = null;
+    console.log("PostgreSQL pool closed");
+  }
 }
 
 export default pool;
