@@ -5,7 +5,7 @@ resource "local_file" "rds_config" {
     RDS_HOST=${module.rds.db_address}
     RDS_PORT=${module.rds.db_port}
     RDS_DBNAME=${module.rds.db_name}
-    RDS_MASTER_SECRET=${module.rds.db_master_user_secret_name}
+    RDS_MASTER_SECRET_ARN=${module.rds.db_master_user_secret_arn}
   EOF
 
   file_permission = "0644"

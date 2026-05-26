@@ -47,10 +47,7 @@ output "db_master_user_secret_arn" {
   value       = module.rds.db_instance_master_user_secret_arn
 }
 
-output "db_master_user_secret_name" {
-  description = "Name of the RDS-managed master user secret (extracted from ARN)"
-  value       = module.rds.db_instance_master_user_secret_arn != null ? split(":", module.rds.db_instance_master_user_secret_arn)[6] : null
-}
+# Removed db_master_user_secret_name - use ARN directly instead (cleaner, no string manipulation needed)
 
 # ============================================================================
 # Network Outputs

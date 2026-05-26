@@ -112,10 +112,6 @@ output "rds_master_user_secret_arn" {
   value       = module.rds.db_master_user_secret_arn
 }
 
-output "rds_master_user_secret_name" {
-  description = "Name of the RDS-managed master user secret (auto-rotates every 7 days)"
-  value       = module.rds.db_master_user_secret_name
-}
 
 output "rds_connection_command" {
   description = "Command to connect to RDS from bastion (requires postgresql-client)"
