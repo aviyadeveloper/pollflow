@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import type { Poll, PollResults } from "$lib/types";
+  import { subscribeToPollResults } from "$lib/stores/pollResults";
 
   interface Props {
     poll: Poll;
@@ -14,7 +15,7 @@
   let justVoted = $state(false);
   let error = $state<string | null>(null);
   let results = $state<PollResults | null>(null);
-  let eventSource: EventSource | null = null;
+  let unsubscribe: (() => void) | null = null;
   let timeRemaining = $state(0);
   let interval: ReturnType<typeof setInterval> | null = null;
 
@@ -42,16 +43,21 @@
       userVote = storedVote;
     }
 
-    // Subscribe to real-time results for active polls
+    // Subscribe to real-time results for active polls via shared connection
     if (isPollActive) {
-      subscribeToResults();
+      unsubscribe = subscribeToPollResults(poll.id, (updatedResults) => {
+        results = updatedResults;
+      });
       updateTimeRemaining();
       interval = setInterval(updateTimeRemaining, 1000);
     }
   });
 
   onDestroy(() => {
-    cleanupEventSource();
+    if (unsubscribe) {
+      unsubscribe();
+      unsubscribe = null;
+    }
     if (interval) clearInterval(interval);
   });
 
@@ -73,32 +79,6 @@
     } else {
       return `${seconds}s`;
     }
-  }
-
-  function cleanupEventSource() {
-    if (eventSource) {
-      eventSource.close();
-      eventSource = null;
-    }
-  }
-
-  function subscribeToResults() {
-    cleanupEventSource();
-
-    eventSource = new EventSource(`/api/polls/${poll.id}/results`);
-
-    eventSource.onmessage = (event) => {
-      try {
-        results = JSON.parse(event.data) as PollResults;
-      } catch (err) {
-        console.error("Error parsing results:", err);
-      }
-    };
-
-    eventSource.onerror = (err) => {
-      console.error("EventSource error for poll", poll.id, err);
-      cleanupEventSource();
-    };
   }
 
   async function handleVote(option: "a" | "b") {
