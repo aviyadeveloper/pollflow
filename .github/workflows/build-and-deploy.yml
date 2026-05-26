@@ -131,11 +131,25 @@ jobs:
           # Deploy ingress (creates ALB)
           kubectl apply -f k8s/ingress/
 
+      - name: Debug pod status
+        run: |
+          echo "Checking pod status..."
+          kubectl get pods -l 'app in (frontend,poll-broker)' -o wide
+
+          echo ""
+          echo "Checking events..."
+          kubectl get events --sort-by='.lastTimestamp' | tail -20
+
+          echo ""
+          echo "Checking secret status..."
+          kubectl get externalsecret rds-credentials
+          kubectl get secret rds-credentials || echo "Secret not yet created"
+
       - name: Wait for rollouts
         run: |
           echo "Waiting for deployments to complete..."
-          kubectl rollout status deployment/frontend --timeout=5m
-          kubectl rollout status deployment/poll-broker --timeout=5m
+          kubectl rollout status deployment/frontend --timeout=5m || (kubectl describe pod -l app=frontend && exit 1)
+          kubectl rollout status deployment/poll-broker --timeout=5m || (kubectl describe pod -l app=poll-broker && exit 1)
 
       - name: Verify deployments
         run: |
