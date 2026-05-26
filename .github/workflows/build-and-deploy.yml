@@ -103,8 +103,26 @@ jobs:
       - name: Deploy to EKS
         run: |
           echo "Applying Kubernetes manifests..."
-          kubectl apply -R -f k8s/apps/
-          kubectl apply -f k8s/ingress/frontend-ingress.yaml
+
+          # Deploy secrets (External Secrets operator already deployed via Terraform)
+          kubectl apply -f k8s/secrets/
+
+          # Deploy Redis (if not already running)
+          kubectl apply -f k8s/redis/
+
+          # Wait for Redis to be ready
+          echo "Waiting for Redis to be ready..."
+          kubectl rollout status statefulset/redis-primary --timeout=3m || true
+
+          # Wait for External Secrets to populate
+          echo "Waiting for secrets to be populated..."
+          sleep 10
+
+          # Deploy applications
+          kubectl apply -f k8s/apps/
+
+          # Deploy ingress (creates ALB)
+          kubectl apply -f k8s/ingress/
 
       - name: Wait for rollouts
         run: |
