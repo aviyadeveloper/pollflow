@@ -127,3 +127,4 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Deployments" >> $GITHUB_STEP_SUMMARY
           kubectl get deployments -l 'app in (frontend,poll-broker)' >> $GITHUB_STEP_SUMMARY || true
+          echo "" >> $GITHUB_STEP_SUMMARY
