@@ -146,6 +146,25 @@ jobs:
           kubectl wait --for=condition=Ready externalsecret/rds-credentials --timeout=2m || true
           sleep 10
 
+          # Apply database schema
+          echo "Applying database schema..."
+          PGHOST=$(kubectl get configmap rds-config -o jsonpath='{.data.POSTGRES_HOST}')
+          PGPORT=$(kubectl get configmap rds-config -o jsonpath='{.data.POSTGRES_PORT}')
+          PGDATABASE=$(kubectl get configmap rds-config -o jsonpath='{.data.POSTGRES_DB}')
+          PGUSER=$(kubectl get secret rds-credentials -o jsonpath='{.data.username}' | base64 -d)
+          PGPASSWORD=$(kubectl get secret rds-credentials -o jsonpath='{.data.password}' | base64 -d)
+
+          cat services/database/schema.sql | kubectl run schema-migration \
+            --image=postgres:16-alpine \
+            --restart=Never \
+            --rm -i \
+            --env="PGHOST=$PGHOST" \
+            --env="PGPORT=$PGPORT" \
+            --env="PGDATABASE=$PGDATABASE" \
+            --env="PGUSER=$PGUSER" \
+            --env="PGPASSWORD=$PGPASSWORD" \
+            --command -- psql
+
           # Deploy applications
           kubectl apply -f k8s/apps/frontend/
           kubectl apply -f k8s/apps/poll-broker/

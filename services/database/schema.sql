@@ -8,7 +8,7 @@
 -- =============================================================================
 -- Stores poll metadata including title, options, timing, and lifecycle status
 
-CREATE TABLE polls (
+CREATE TABLE IF NOT EXISTS polls (
     id SERIAL PRIMARY KEY,
     title TEXT NOT NULL,
     description TEXT,
@@ -33,7 +33,7 @@ CREATE TABLE polls (
 -- Stores individual votes with IP-based user identification
 -- One vote per IP per poll (enforced by unique constraint)
 
-CREATE TABLE votes (
+CREATE TABLE IF NOT EXISTS votes (
     id SERIAL PRIMARY KEY,
     poll_id INTEGER NOT NULL REFERENCES polls(id) ON DELETE CASCADE,
     user_ip VARCHAR(45) NOT NULL,
@@ -53,11 +53,11 @@ CREATE TABLE votes (
 -- Performance optimizations for common query patterns
 
 -- Index for poll lifecycle queries (finding polls to activate/close)
-CREATE INDEX idx_polls_status_time ON polls(status, start_time, end_time);
+CREATE INDEX IF NOT EXISTS idx_polls_status_time ON polls(status, start_time, end_time);
 
 -- Index for filtering polls by category
-CREATE INDEX idx_polls_category ON polls(poll_category);
+CREATE INDEX IF NOT EXISTS idx_polls_category ON polls(poll_category);
 
 -- Index for aggregating votes per poll (counting results)
-CREATE INDEX idx_votes_poll_id ON votes(poll_id);
+CREATE INDEX IF NOT EXISTS idx_votes_poll_id ON votes(poll_id);
 
