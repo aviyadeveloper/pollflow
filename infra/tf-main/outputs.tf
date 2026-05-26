@@ -107,14 +107,14 @@ output "rds_username" {
   sensitive   = true
 }
 
-output "rds_credentials_secret_arn" {
-  description = "ARN of the Secrets Manager secret containing database credentials"
-  value       = module.rds.db_credentials_secret_arn
+output "rds_master_user_secret_arn" {
+  description = "ARN of the RDS-managed master user secret (with automatic rotation)"
+  value       = module.rds.db_master_user_secret_arn
 }
 
-output "rds_credentials_secret_name" {
-  description = "Name of the Secrets Manager secret containing database credentials"
-  value       = module.rds.db_credentials_secret_name
+output "rds_master_user_secret_name" {
+  description = "Name of the RDS-managed master user secret (auto-rotates every 7 days)"
+  value       = module.rds.db_master_user_secret_name
 }
 
 output "rds_connection_command" {

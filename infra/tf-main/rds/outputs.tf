@@ -39,17 +39,17 @@ output "db_username" {
 }
 
 # ============================================================================
-# Secrets Manager Outputs
+# RDS-Managed Secret Outputs (auto-rotates every 7 days)
 # ============================================================================
 
-output "db_credentials_secret_arn" {
-  description = "ARN of the Secrets Manager secret containing database credentials"
-  value       = aws_secretsmanager_secret.db_credentials.arn
+output "db_master_user_secret_arn" {
+  description = "ARN of the RDS-managed master user secret (with automatic rotation)"
+  value       = module.rds.db_instance_master_user_secret_arn
 }
 
-output "db_credentials_secret_name" {
-  description = "Name of the Secrets Manager secret containing database credentials"
-  value       = aws_secretsmanager_secret.db_credentials.name
+output "db_master_user_secret_name" {
+  description = "Name of the RDS-managed master user secret (extracted from ARN)"
+  value       = module.rds.db_instance_master_user_secret_arn != null ? split(":", module.rds.db_instance_master_user_secret_arn)[6] : null
 }
 
 # ============================================================================

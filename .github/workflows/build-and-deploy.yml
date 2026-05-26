@@ -101,7 +101,26 @@ jobs:
           sed -i "s|image: .*pollflow-frontend.*|image: $ECR_REGISTRY/pollflow-frontend:$IMAGE_TAG|g" k8s/apps/frontend/deployment.yaml
           sed -i "s|image: .*pollflow-poll-broker.*|image: $ECR_REGISTRY/pollflow-poll-broker:$IMAGE_TAG|g" k8s/apps/poll-broker/deployment.yaml
 
-      - name: Deploy to EKS
+      - name: Update secret names in ExternalSecret
+        run: |
+          # Get RDS connection info from Terraform outputs
+          cd infra/tf-main
+          RDS_MASTER_SECRET=$(terraform output -raw rds_master_user_secret_name)
+          RDS_HOST=$(terraform output -raw rds_address)
+          RDS_PORT=$(terraform output -raw rds_port)
+          RDS_DBNAME=$(terraform output -raw rds_database_name)
+          cd ../..
+          
+          echo "Using RDS master secret: $RDS_MASTER_SECRET"
+          echo "RDS connection: $RDS_HOST:$RDS_PORT/$RDS_DBNAME"
+          
+          # Update ExternalSecret with RDS-managed secret name
+          sed -i "s|key: RDS_MASTER_SECRET_PLACEHOLDER|key: $RDS_MASTER_SECRET|g" k8s/secrets/external-secret-rds.yaml
+          
+          # Update ConfigMap with connection details
+          sed -i "s|POSTGRES_HOST: RDS_HOST_PLACEHOLDER|POSTGRES_HOST: \"$RDS_HOST\"|g" k8s/secrets/rds-config.yaml
+          sed -i "s|POSTGRES_PORT: RDS_PORT_PLACEHOLDER|POSTGRES_PORT: \"$RDS_PORT\"|g" k8s/secrets/rds-config.yaml
+          sed -i "s|POSTGRES_DB: RDS_DBNAME_PLACEHOLDER|POSTGRES_DB: \"$RDS_DBNAME\"|g" k8s/secrets/rds-config.yaml
         run: |
           echo "Applying Kubernetes manifests..."
 
