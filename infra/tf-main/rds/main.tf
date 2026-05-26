@@ -1,15 +1,4 @@
 # ============================================================================
-# Password Generation
-# ============================================================================
-
-resource "random_password" "db_password" {
-  length  = 32
-  special = true
-  # Avoid characters that might cause issues in connection strings
-  override_special = "!#$%&*()-_=+[]{}<>:?"
-}
-
-# ============================================================================
 # Network Resources
 # ============================================================================
 
@@ -52,10 +41,10 @@ module "rds" {
   storage_encrypted     = true
 
   # Database
-  db_name  = var.database_name
-  username = var.database_username
-  password = random_password.db_password.result
-  port     = 5432
+  db_name                     = var.database_name
+  username                    = var.database_username
+  manage_master_user_password = true # Use AWS-managed secret with automatic rotation
+  port                        = 5432
 
   # Network
   db_subnet_group_name   = aws_db_subnet_group.this.name
@@ -88,34 +77,6 @@ module "rds" {
   )
 }
 
-# ============================================================================
-# Secrets Manager (password and connection details)
-# ============================================================================
-
-resource "aws_secretsmanager_secret" "db_credentials" {
-  name_prefix             = "${var.project_name}-rds-"
-  description             = "RDS PostgreSQL credentials and connection details for ${var.project_name}"
-  recovery_window_in_days = 7
-
-  tags = merge(
-    var.tags,
-    {
-      Name      = "${var.project_name}-rds-credentials"
-      Project   = var.project_name
-      ManagedBy = "terraform"
-    }
-  )
-}
-
-resource "aws_secretsmanager_secret_version" "db_credentials" {
-  secret_id = aws_secretsmanager_secret.db_credentials.id
-  secret_string = jsonencode({
-    username = var.database_username
-    password = random_password.db_password.result
-    engine   = "postgres"
-    host     = module.rds.db_instance_address
-    port     = module.rds.db_instance_port
-    dbname   = var.database_name
-  })
-}
+# Note: RDS manages its own secret with automatic password rotation.
+# Connection details (host, port, dbname) are injected via ConfigMap in K8s.
 

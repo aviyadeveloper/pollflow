@@ -2,6 +2,7 @@
 .temp
 
 *.env
+!.ci/rds-config.env
 
 # Go binaries (poll-broker)
 services/poll-broker/poll-broker

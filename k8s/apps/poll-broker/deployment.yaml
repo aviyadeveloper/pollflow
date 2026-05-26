@@ -24,16 +24,23 @@ spec:
         - name: poll-broker
           image: 058264398399.dkr.ecr.eu-west-3.amazonaws.com/pollflow-poll-broker:latest
           env:
+            # RDS connection info (from ConfigMap)
             - name: DB_HOST
               valueFrom:
-                secretKeyRef:
-                  name: rds-credentials
-                  key: host
+                configMapKeyRef:
+                  name: rds-config
+                  key: POSTGRES_HOST
             - name: DB_PORT
               valueFrom:
-                secretKeyRef:
-                  name: rds-credentials
-                  key: port
+                configMapKeyRef:
+                  name: rds-config
+                  key: POSTGRES_PORT
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: rds-config
+                  key: POSTGRES_DB
+            # RDS credentials (from Secret - auto-rotates)
             - name: DB_USER
               valueFrom:
                 secretKeyRef:
@@ -44,11 +51,6 @@ spec:
                 secretKeyRef:
                   name: rds-credentials
                   key: password
-            - name: DB_NAME
-              valueFrom:
-                secretKeyRef:
-                  name: rds-credentials
-                  key: dbname
             - name: REDIS_HOST
               value: "redis-primary"
             - name: REDIS_PORT

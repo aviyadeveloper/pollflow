@@ -40,16 +40,23 @@ spec:
               value: "production"
             - name: PORT
               value: "3000"
+            # RDS connection info (from ConfigMap)
             - name: POSTGRES_HOST
               valueFrom:
-                secretKeyRef:
-                  name: rds-credentials
-                  key: host
+                configMapKeyRef:
+                  name: rds-config
+                  key: POSTGRES_HOST
             - name: POSTGRES_PORT
               valueFrom:
-                secretKeyRef:
-                  name: rds-credentials
-                  key: port
+                configMapKeyRef:
+                  name: rds-config
+                  key: POSTGRES_PORT
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: rds-config
+                  key: POSTGRES_DB
+            # RDS credentials (from Secret - auto-rotates)
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
@@ -60,11 +67,6 @@ spec:
                 secretKeyRef:
                   name: rds-credentials
                   key: password
-            - name: POSTGRES_DB
-              valueFrom:
-                secretKeyRef:
-                  name: rds-credentials
-                  key: dbname
             - name: REDIS_HOST
               value: "redis-primary"
             - name: REDIS_PORT

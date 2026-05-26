@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"strconv"
 )
@@ -87,11 +88,12 @@ func (c *Config) Validate() error {
 }
 
 // DatabaseURL returns a PostgreSQL connection string
+// Username and password are URL-encoded to handle special characters
 func (c *Config) DatabaseURL() string {
 	return fmt.Sprintf(
-		"postgres://%s:%s@%s:%d/%s?sslmode=disable",
-		c.Database.User,
-		c.Database.Password,
+		"postgres://%s:%s@%s:%d/%s?sslmode=require",
+		url.PathEscape(c.Database.User),
+		url.PathEscape(c.Database.Password),
 		c.Database.Host,
 		c.Database.Port,
 		c.Database.Name,

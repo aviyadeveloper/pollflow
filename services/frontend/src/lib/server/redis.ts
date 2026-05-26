@@ -1,7 +1,7 @@
 import Redis from "ioredis";
 import type { VoteRequest } from "$lib/types";
 
-// Validate required environment variables
+// Validate required environment variables (only when actually needed)
 function getEnvVar(name: string): string {
   const value = process.env[name];
   if (!value) {
@@ -15,25 +15,32 @@ function getOptionalEnvVar(name: string): string | undefined {
   return process.env[name] || undefined;
 }
 
-// Redis client for queue operations
-const redis = new Redis({
-  host: getEnvVar("REDIS_HOST"),
-  port: parseInt(getEnvVar("REDIS_PORT")),
-  password: getOptionalEnvVar("REDIS_PASSWORD"),
-  maxRetriesPerRequest: 3,
-  retryStrategy(times) {
-    const delay = Math.min(times * 50, 2000);
-    return delay;
-  },
-});
+// Lazy Redis client - created on first use
+let redis: Redis | null = null;
 
-redis.on("connect", () => {
-  console.log("✓ Redis connected (queue)");
-});
+function getRedis(): Redis {
+  if (!redis) {
+    redis = new Redis({
+      host: getEnvVar("REDIS_HOST"),
+      port: parseInt(getEnvVar("REDIS_PORT")),
+      password: getOptionalEnvVar("REDIS_PASSWORD"),
+      maxRetriesPerRequest: 3,
+      retryStrategy(times) {
+        const delay = Math.min(times * 50, 2000);
+        return delay;
+      },
+    });
 
-redis.on("error", (err: Error) => {
-  console.error("Redis error (queue):", err);
-});
+    redis.on("connect", () => {
+      console.log("✓ Redis connected (queue)");
+    });
+
+    redis.on("error", (err: Error) => {
+      console.error("Redis error (queue):", err);
+    });
+  }
+  return redis;
+}
 
 /**
  * Push a vote to the Redis queue for processing by poll-broker
@@ -47,7 +54,25 @@ export async function publishVote(vote: VoteRequest): Promise<void> {
     timestamp: Date.now(),
   });
 
-  await redis.rpush(queueName, payload);
+  await getRedis().rpush(queueName, payload);
 }
 
-export default redis;
+// Export getRedis for use in SSE endpoints
+export { getRedis };
+
+/**
+ * Create a new Redis subscriber (for pub/sub)
+ * Pub/sub requires a dedicated connection
+ */
+export function createRedisSubscriber(): Redis {
+  return new Redis({
+    host: getEnvVar("REDIS_HOST"),
+    port: parseInt(getEnvVar("REDIS_PORT")),
+    password: getOptionalEnvVar("REDIS_PASSWORD"),
+    maxRetriesPerRequest: 3,
+    retryStrategy(times) {
+      const delay = Math.min(times * 50, 2000);
+      return delay;
+    },
+  });
+}

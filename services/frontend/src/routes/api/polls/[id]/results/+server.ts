@@ -1,17 +1,5 @@
 import type { RequestHandler } from "./$types";
-import Redis from "ioredis";
-
-function getEnvVar(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`Missing required environment variable: ${name}`);
-  }
-  return value;
-}
-
-function getOptionalEnvVar(name: string): string | undefined {
-  return process.env[name] || undefined;
-}
+import { createRedisSubscriber } from "$lib/server/redis";
 
 export const GET: RequestHandler = async ({ params }) => {
   const pollId = parseInt(params.id);
@@ -31,11 +19,7 @@ export const GET: RequestHandler = async ({ params }) => {
       const encoder = new TextEncoder();
 
       // Create a dedicated Redis subscriber for this connection
-      const subscriber = new Redis({
-        host: getEnvVar("REDIS_HOST"),
-        port: parseInt(getEnvVar("REDIS_PORT")),
-        password: getOptionalEnvVar("REDIS_PASSWORD"),
-      });
+      const subscriber = createRedisSubscriber();
 
       // Send initial connection comment
       controller.enqueue(encoder.encode(`: connected to poll ${pollId}\n\n`));
@@ -59,8 +43,16 @@ export const GET: RequestHandler = async ({ params }) => {
 
             const data = `data: ${JSON.stringify(results)}\n\n`;
             controller.enqueue(encoder.encode(data));
-          } catch (error) {
-            console.error("Error parsing/sending results:", error);
+          } catch (error: any) {
+            // If controller is closed, clean up the subscriber
+            if (error?.code === 'ERR_INVALID_STATE' || error?.message?.includes('Controller is already closed')) {
+              console.log(`Controller closed for poll ${pollId}, cleaning up subscriber`);
+              if ((controller as any)._cleanup) {
+                (controller as any)._cleanup();
+              }
+            } else {
+              console.error("Error parsing/sending results:", error);
+            }
           }
         }
       });
@@ -74,9 +66,13 @@ export const GET: RequestHandler = async ({ params }) => {
       const heartbeat = setInterval(() => {
         try {
           controller.enqueue(encoder.encode(": heartbeat\n\n"));
-        } catch (error) {
-          // Controller closed, stop heartbeat
+        } catch (error: any) {
+          // Controller closed, clean up and stop heartbeat
+          console.log(`Heartbeat detected closed controller for poll ${pollId}, cleaning up`);
           clearInterval(heartbeat);
+          if ((controller as any)._cleanup) {
+            (controller as any)._cleanup();
+          }
         }
       }, 30000); // Every 30 seconds
 
