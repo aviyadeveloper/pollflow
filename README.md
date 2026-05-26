@@ -165,6 +165,42 @@ pollflow/
 
 ## Quick Start
 
+### Local Development (Docker Compose)
+
+Run the complete application stack locally for development and testing:
+
+```bash
+# 1. Start all services (PostgreSQL, Redis, poll-broker, frontend)
+make docker-up
+
+# 2. View logs
+make docker-logs              # All services
+make docker-logs-frontend     # Frontend only
+make docker-logs-broker       # Poll broker only
+
+# 3. Access the application
+open http://localhost:3000    # Frontend web interface
+
+# 4. Stop services
+make docker-down
+
+# 5. Clean up (removes volumes and images)
+make docker-clean
+```
+
+**Available services:**
+- **Frontend**: http://localhost:3000 (SvelteKit web app)
+- **PostgreSQL**: localhost:5432 (pollflow_development database)
+- **Redis**: localhost:6379 (queue and pub/sub)
+- **Poll Broker**: Background worker processing votes
+
+**Environment Configuration:**
+Edit `.development.env` to customize database credentials, ports, and other settings.
+
+See [services/frontend/README.md](services/frontend/README.md) for frontend-specific development.
+
+---
+
 ### 1. Bootstrap AWS Infrastructure
 
 ```bash

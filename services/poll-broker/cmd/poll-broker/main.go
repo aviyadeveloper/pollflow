@@ -49,7 +49,7 @@ func main() {
 	// Create components
 	pollPoller := poller.New(dbClient, 10*time.Second)
 	voteProcessor := processor.New(dbClient, redisClient)
-	resultsBroadcaster := broadcaster.New(dbClient, redisClient, 3*time.Second)
+	resultsBroadcaster := broadcaster.New(dbClient, redisClient, 1*time.Second)
 
 	// Start components in goroutines
 	var wg sync.WaitGroup

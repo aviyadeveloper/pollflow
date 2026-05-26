@@ -1,0 +1,24 @@
+# pnpm workspace configuration
+# https://pnpm.io/pnpm-workspace_yaml
+
+# Workspace packages
+packages:
+  - 'services/frontend'
+
+# Security settings
+minimumReleaseAge: 10080  # 7 days in minutes (1440 = 1 day, 10080 = 7 days)
+minimumReleaseAgeStrict: true  # Fail if no version meets age requirement
+blockExoticSubdeps: true  # Only direct deps can use git/tarball sources (default: true)
+strictPeerDependencies: false  # Don't fail on peer dep issues (can enable for stricter enforcement)
+autoInstallPeers: false  # Prevent automatic peer dependency installation
+savePrefix: ''  # No semver prefix (empty string = exact versions in package.json)
+
+# Build script security (v10.26.0+)
+strictDepBuilds: true  # Fail on unreviewed build scripts (default: true)
+# dangerouslyAllowAllBuilds: false  # Never enable this in production
+
+# Trust policy (v10.21.0+)
+# trustPolicy: no-downgrade  # Uncomment to prevent trust level downgrades
+
+# Other useful settings
+preferFrozenLockfile: true  # Use existing lockfile when possible (CI-friendly)
