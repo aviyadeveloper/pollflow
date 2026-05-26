@@ -16,10 +16,13 @@ export const GET: RequestHandler = async () => {
 
       // Get all active polls to know which channels to subscribe to
       const polls = await getAllPolls();
-      const activePolls = polls.filter(p => p.status === 'active');
-      const channels = activePolls.map(p => `poll:results:${p.id}`);
+      const activePolls = polls.filter((p) => p.status === "active");
+      const channels = activePolls.map((p) => `poll:results:${p.id}`);
 
-      console.log(`SSE: Subscribing to ${channels.length} active poll channels:`, channels);
+      console.log(
+        `SSE: Subscribing to ${channels.length} active poll channels:`,
+        channels,
+      );
 
       // Subscribe to all active poll channels
       if (channels.length > 0) {
@@ -43,8 +46,13 @@ export const GET: RequestHandler = async () => {
           controller.enqueue(encoder.encode(data));
         } catch (error: any) {
           // If controller is closed, clean up the subscriber
-          if (error?.code === 'ERR_INVALID_STATE' || error?.message?.includes('Controller is already closed')) {
-            console.log('Controller closed for all-polls stream, cleaning up subscriber');
+          if (
+            error?.code === "ERR_INVALID_STATE" ||
+            error?.message?.includes("Controller is already closed")
+          ) {
+            console.log(
+              "Controller closed for all-polls stream, cleaning up subscriber",
+            );
             if ((controller as any)._cleanup) {
               (controller as any)._cleanup();
             }
@@ -65,7 +73,9 @@ export const GET: RequestHandler = async () => {
           controller.enqueue(encoder.encode(": heartbeat\n\n"));
         } catch (error: any) {
           // Controller closed, clean up and stop heartbeat
-          console.log('Heartbeat detected closed controller for all-polls stream, cleaning up');
+          console.log(
+            "Heartbeat detected closed controller for all-polls stream, cleaning up",
+          );
           clearInterval(heartbeat);
           if ((controller as any)._cleanup) {
             (controller as any)._cleanup();
@@ -82,7 +92,7 @@ export const GET: RequestHandler = async () => {
     },
 
     cancel(controller) {
-      console.log('Client disconnected from all-polls stream');
+      console.log("Client disconnected from all-polls stream");
       if ((controller as any)._cleanup) {
         (controller as any)._cleanup();
       }

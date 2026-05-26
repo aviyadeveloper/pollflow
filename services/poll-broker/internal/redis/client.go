@@ -31,7 +31,7 @@ type PollResultsPayload struct {
 }
 
 const (
-	VotesQueueKey = "votes:queue"
+	VotesQueueKey  = "votes:queue"
 	ResultsChannel = "poll:results:%d" // Format with poll ID
 )
 

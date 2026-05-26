@@ -29,19 +29,19 @@ type Poll struct {
 
 // Vote represents a vote record from the database
 type Vote struct {
-	ID       int
-	PollID   int
-	UserIP   string
-	Option   string
-	VotedAt  time.Time
+	ID      int
+	PollID  int
+	UserIP  string
+	Option  string
+	VotedAt time.Time
 }
 
 // PollResults holds aggregated vote counts for a poll
 type PollResults struct {
-	PollID        int
-	OptionACount  int
-	OptionBCount  int
-	TotalVotes    int
+	PollID       int
+	OptionACount int
+	OptionBCount int
+	TotalVotes   int
 }
 
 // NewClient creates a new database client with connection pooling
