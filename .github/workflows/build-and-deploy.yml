@@ -105,6 +105,9 @@ jobs:
         run: |
           echo "Applying Kubernetes manifests..."
 
+          # Deploy storage class (required for Redis PVCs)
+          kubectl apply -f k8s/storage/
+
           # Deploy secrets (External Secrets operator already deployed via Terraform)
           kubectl apply -f k8s/secrets/
 
@@ -113,14 +116,17 @@ jobs:
 
           # Wait for Redis to be ready
           echo "Waiting for Redis to be ready..."
-          kubectl rollout status statefulset/redis-primary --timeout=3m || true
+          kubectl rollout status statefulset/redis-primary --timeout=5m || true
+          kubectl rollout status statefulset/redis-replica --timeout=5m || true
 
           # Wait for External Secrets to populate
           echo "Waiting for secrets to be populated..."
+          kubectl wait --for=condition=Ready externalsecret/rds-credentials --timeout=2m || true
           sleep 10
 
           # Deploy applications
-          kubectl apply -f k8s/apps/
+          kubectl apply -f k8s/apps/frontend/
+          kubectl apply -f k8s/apps/poll-broker/
 
           # Deploy ingress (creates ALB)
           kubectl apply -f k8s/ingress/
