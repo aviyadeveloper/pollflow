@@ -1,0 +1,7 @@
+Poll to evaluate:
+Title: {title}
+Description: {description}
+Option A: {option_a}
+Option B: {option_b}
+
+Is this poll appropriate for a public platform? Return ONLY valid JSON.

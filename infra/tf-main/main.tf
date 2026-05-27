@@ -76,3 +76,28 @@ module "rds" {
   }
 }
 
+module "poll_generator" {
+  source = "./poll-generator"
+
+  project_name       = var.project_name
+  region             = var.region
+  vpc_id             = module.vpc.vpc_id
+  private_subnet_ids = module.vpc.private_subnets
+
+  # RDS connection info (from RDS module)
+  rds_host              = module.rds.db_address
+  rds_port              = module.rds.db_port
+  rds_dbname            = module.rds.db_name
+  rds_security_group_id = module.rds.db_security_group_id
+
+  # Optional: override defaults if needed
+  # schedule_window_hours = 2
+  # target_polls_per_run  = 24
+  # similarity_threshold  = 0.8
+
+  tags = {
+    Project   = var.project_name
+    ManagedBy = "terraform"
+  }
+}
+

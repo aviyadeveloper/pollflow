@@ -1,0 +1,6 @@
+News Article:
+Headline: {headline}
+Description: {description}
+Category: {category}
+
+Generate a poll question based on this article. Remember to return ONLY valid JSON.

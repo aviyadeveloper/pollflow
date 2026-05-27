@@ -119,3 +119,19 @@ output "rds_connection_command" {
   sensitive   = true
 }
 
+# Poll Generator Outputs
+output "poll_generator_lambda_arn" {
+  description = "ARN of the poll generator Lambda function"
+  value       = module.poll_generator.lambda_function_arn
+}
+
+output "poll_generator_lambda_name" {
+  description = "Name of the poll generator Lambda function"
+  value       = module.poll_generator.lambda_function_name
+}
+
+output "poll_generator_eventbridge_rule" {
+  description = "Name of the EventBridge schedule rule"
+  value       = module.poll_generator.eventbridge_rule_name
+}
+

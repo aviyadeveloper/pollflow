@@ -42,22 +42,19 @@ resource "aws_iam_role" "project_role" {
 # Policies #
 ############
 
-# S3 - Terraform state backend access
+# S3 - Full permissions for state backend + Lambda packages
 resource "aws_iam_role_policy" "s3_policy" {
-  name = "S3StateManagement"
+  name = "S3FullManagement"
   role = aws_iam_role.project_role.name
 
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "S3StateBackend"
+        Sid    = "S3FullAccess"
         Effect = "Allow"
         Action = [
-          "s3:ListBucket",
-          "s3:GetObject",
-          "s3:PutObject",
-          "s3:DeleteObject"
+          "s3:*"
         ]
         Resource = [
           "arn:aws:s3:::pollflow*",
@@ -217,4 +214,30 @@ resource "aws_iam_role_policy_attachment" "rds_full_access" {
 resource "aws_iam_role_policy_attachment" "secrets_manager_full_access" {
   role       = aws_iam_role.project_role.name
   policy_arn = "arn:aws:iam::aws:policy/SecretsManagerReadWrite"
+}
+
+# Lambda - For serverless functions (poll generator)
+resource "aws_iam_role_policy_attachment" "lambda_full_access" {
+  role       = aws_iam_role.project_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSLambda_FullAccess"
+}
+
+# EventBridge - For event scheduling
+resource "aws_iam_role_policy" "eventbridge_admin" {
+  name = "EventBridgeAdminAccess"
+  role = aws_iam_role.project_role.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "EventBridgeFullAccess"
+        Effect = "Allow"
+        Action = [
+          "events:*"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
 }

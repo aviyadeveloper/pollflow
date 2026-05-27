@@ -1,0 +1,28 @@
+[project]
+name = "pollflow-poll-generator"
+version = "0.1.0"
+description = "AI-powered poll generator Lambda for PollFlow"
+requires-python = ">=3.12"
+dependencies = [
+  "requests==2.34.2",
+  "psycopg[binary]==3.3.4",
+  "boto3==1.43.11",
+  "pydantic==2.13.4",
+  "scikit-learn==1.8.0",
+  "numpy==2.4.6",
+  "python-dotenv==1.2.2",
+  "openrouter==0.9.1",
+  "python-json-logger==4.1.0",
+]
+
+[dependency-groups]
+dev = ["pytest==9.0.3"]
+
+[tool.uv]
+# Security settings (UV best practices)
+exclude-newer = "P7D"  # Only install packages published 7+ days ago
+no-sources = true      # Only use pre-built wheels, no source distributions
+resolution = "highest" # Prefer stable versions
+
+# For Lambda - no package installation needed
+package = false
