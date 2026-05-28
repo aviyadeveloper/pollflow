@@ -1,5 +1,5 @@
 import pino from "pino";
-import pinoLoki from "pino-loki";
+import { Writable } from "stream";
 
 // Get Loki URL from environment (optional)
 const lokiURL = process.env.LOKI_URL;
@@ -24,23 +24,63 @@ if (!lokiURL) {
   };
 }
 
+// Create custom Loki stream writer (bypassing pino-loki)
+class LokiStream extends Writable {
+  private lokiUrl: string;
+  private labels: Record<string, string>;
+
+  constructor(lokiUrl: string, labels: Record<string, string>) {
+    super();
+    this.lokiUrl = lokiUrl;
+    this.labels = labels;
+  }
+
+  _write(chunk: Buffer, encoding: string, callback: () => void) {
+    const log = chunk.toString();
+    
+    // Send to Loki asynchronously
+    this.sendToLoki(log).catch((err) => {
+      console.error("Loki push error:", err.message);
+    });
+    
+    // Don't wait for Loki - call callback immediately
+    callback();
+  }
+
+  private async sendToLoki(logLine: string) {
+    const timestamp = Date.now() + "000000"; // Loki needs nanoseconds
+    
+    const payload = {
+      streams: [
+        {
+          stream: this.labels,
+          values: [[timestamp, logLine]],
+        },
+      ],
+    };
+
+    const response = await fetch(`${this.lokiUrl}/loki/api/v1/push`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Loki responded with ${response.status}`);
+    }
+  }
+}
+
 // Create pino logger
 let logger: pino.Logger;
 
 if (lokiURL) {
-  // Use pino-loki directly (not as transport) for better error visibility
-  const lokiStream = pinoLoki({
-    host: lokiURL,
-    labels: { service: "frontend", environment: appEnv },
-    // Disable batching for immediate log delivery (can enable later for performance)
-    batching: false,
-    replaceTimestamp: false,
-    convertArrays: false,
-  });
-
-  // Log any Loki errors to console
-  lokiStream.on("error", (err) => {
-    console.error("Loki stream error:", err);
+  // Use custom Loki stream writer
+  const lokiStream = new LokiStream(lokiURL, {
+    service: "frontend",
+    environment: appEnv,
   });
 
   logger = pino(options, lokiStream);
