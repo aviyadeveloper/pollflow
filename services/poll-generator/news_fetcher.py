@@ -2,6 +2,13 @@
 News API client for fetching diverse news headlines.
 
 Fetches articles across all 7 categories to ensure poll diversity.
+
+Rate Limit Strategy:
+- NewsAPI free tier: 100 requests/day
+- Current usage: 7 requests per Lambda run (one per category)
+- Lambda schedule: Every 2 hours (12 runs/day)
+- Total daily requests: 84/day (84% utilization)
+- Headroom: 16 requests/day for retries/manual runs
 """
 
 import requests
@@ -167,6 +174,11 @@ class NewsFetcher:
         Distributes requests across 7 categories to ensure balanced coverage.
         Generates ~50 articles to produce 36 final polls after quality gates.
 
+        **Rate Limit Compliance:**
+        - Makes 7 API requests per call (one per category)
+        - Lambda runs 12 times/day (every 2 hours)
+        - Total: 84 requests/day (84% of 100/day free tier limit)
+
         Args:
             target_count: Target number of articles (~50 for 36 polls)
             country: Country code (default: us)
@@ -185,6 +197,7 @@ class NewsFetcher:
 
         all_articles = []
         seen_titles = set()  # Simple deduplication
+        api_requests_made = 0
 
         for i, category in enumerate(self.CATEGORIES):
             # Add extra article to first N categories
@@ -194,6 +207,7 @@ class NewsFetcher:
                 articles = self.fetch_by_category(
                     category=category, page_size=count, country=country
                 )
+                api_requests_made += 1  # Count each API call
 
                 # Filter out duplicates by title
                 for article in articles:
@@ -210,8 +224,14 @@ class NewsFetcher:
                 continue
 
         logger.info(
-            f"Fetched {len(all_articles)} diverse articles "
-            f"across {len(self.CATEGORIES)} categories"
+            "Fetched diverse articles",
+            extra={
+                "event": "diverse_articles_fetched",
+                "article_count": len(all_articles),
+                "categories": len(self.CATEGORIES),
+                "api_requests": api_requests_made,
+                "daily_estimate": api_requests_made * 12,  # Lambda runs 12x/day
+            },
         )
 
         return all_articles[:target_count]  # Ensure we don't exceed target
