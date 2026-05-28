@@ -144,6 +144,38 @@ resource "aws_iam_role_policy_attachment" "cloudwatch" {
   policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
 }
 
+# Custom policy for CloudWatch Logs read access (for Grafana)
+resource "aws_iam_policy" "cloudwatch_logs_read" {
+  name        = "${var.cluster_name}-internal-tools-cloudwatch-logs-read"
+  description = "Allow Grafana to read CloudWatch Logs for Lambda functions"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:DescribeLogGroups",
+          "logs:DescribeLogStreams",
+          "logs:FilterLogEvents",
+          "logs:GetLogEvents",
+          "logs:GetLogGroupFields",
+          "logs:GetLogRecord",
+          "logs:GetQueryResults",
+          "logs:StartQuery",
+          "logs:StopQuery"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "cloudwatch_logs_read" {
+  role       = aws_iam_role.internal_tools.name
+  policy_arn = aws_iam_policy.cloudwatch_logs_read.arn
+}
+
 # Custom policy for Secrets Manager access
 resource "aws_iam_policy" "secrets_access" {
   name        = "${var.cluster_name}-internal-tools-secrets"
@@ -233,4 +265,48 @@ resource "aws_eip" "internal_tools" {
     Environment = var.environment
     ManagedBy   = "terraform"
   }
+}
+
+# ============================================================================
+# Route53 Private Hosted Zone for internal DNS
+# ============================================================================
+resource "aws_route53_zone" "internal" {
+  name = "${var.cluster_name}.internal"
+
+  vpc {
+    vpc_id = var.vpc_id
+  }
+
+  tags = {
+    Name        = "${var.cluster_name}-internal-zone"
+    Environment = var.environment
+    ManagedBy   = "terraform"
+  }
+}
+
+# DNS record for Loki service
+resource "aws_route53_record" "loki" {
+  zone_id = aws_route53_zone.internal.zone_id
+  name    = "loki.${var.cluster_name}.internal"
+  type    = "A"
+  ttl     = 300
+  records = [aws_instance.internal_tools.private_ip]
+}
+
+# DNS record for Prometheus service
+resource "aws_route53_record" "prometheus" {
+  zone_id = aws_route53_zone.internal.zone_id
+  name    = "prometheus.${var.cluster_name}.internal"
+  type    = "A"
+  ttl     = 300
+  records = [aws_instance.internal_tools.private_ip]
+}
+
+# DNS record for Grafana internal access
+resource "aws_route53_record" "grafana" {
+  zone_id = aws_route53_zone.internal.zone_id
+  name    = "grafana.${var.cluster_name}.internal"
+  type    = "A"
+  ttl     = 300
+  records = [aws_instance.internal_tools.private_ip]
 }

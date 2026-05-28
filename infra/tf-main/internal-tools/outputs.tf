@@ -37,3 +37,28 @@ output "security_group_id" {
   description = "Security group ID for the internal tools instance"
   value       = aws_security_group.internal_tools.id
 }
+
+output "loki_dns" {
+  description = "Internal DNS name for Loki service"
+  value       = aws_route53_record.loki.fqdn
+}
+
+output "loki_url" {
+  description = "Full Loki URL for log shipping"
+  value       = "http://${aws_route53_record.loki.fqdn}:3100"
+}
+
+output "prometheus_dns" {
+  description = "Internal DNS name for Prometheus service"
+  value       = aws_route53_record.prometheus.fqdn
+}
+
+output "prometheus_url_internal" {
+  description = "Internal Prometheus URL for scraping"
+  value       = "http://${aws_route53_record.prometheus.fqdn}:9090"
+}
+
+output "grafana_dns" {
+  description = "Internal DNS name for Grafana service"
+  value       = aws_route53_record.grafana.fqdn
+}

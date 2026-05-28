@@ -3,6 +3,7 @@ package logger
 import (
 	"os"
 
+	"github.com/afiskon/promtail-client/promtail"
 	"github.com/sirupsen/logrus"
 )
 
@@ -43,6 +44,54 @@ func Initialize() {
 
 	// Add service name to all logs
 	Log = Log.WithField("service", "poll-broker").Logger
+
+	// Add Loki hook if URL is configured
+	lokiURL := os.Getenv("LOKI_URL")
+	if lokiURL != "" {
+		conf := promtail.ClientConfig{
+			PushURL:            lokiURL + "/loki/api/v1/push",
+			Labels:             "{service=\"poll-broker\",environment=\"" + getEnv("APP_ENV", "development") + "\"}",
+			BatchWait:          2000, // 2 seconds
+			BatchEntriesNumber: 10000,
+			SendLevel:          promtail.INFO,
+			PrintLevel:         promtail.ERROR,
+		}
+
+		loki, err := promtail.NewClientProto(conf)
+		if err != nil {
+			Log.WithError(err).Warn("Failed to initialize Loki client, continuing with stdout only")
+		} else {
+			Log.AddHook(&LokiHook{client: loki})
+			Log.Info("Loki log shipping enabled")
+		}
+	}
+}
+
+// LokiHook sends logs to Loki
+type LokiHook struct {
+	client promtail.Client
+}
+
+func (hook *LokiHook) Fire(entry *logrus.Entry) error {
+	line, err := entry.String()
+	if err != nil {
+		return err
+	}
+
+	level := entry.Level.String()
+	hook.client.Infof("%s: %s", level, line)
+	return nil
+}
+
+func (hook *LokiHook) Levels() []logrus.Level {
+	return logrus.AllLevels
+}
+
+func getEnv(key, fallback string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return fallback
 }
 
 // WithFields creates a new logger entry with additional context fields

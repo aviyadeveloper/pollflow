@@ -361,7 +361,7 @@ EOFPROMTAIL
 create_grafana_datasource_config() {
     log_info "Creating Grafana datasource configuration"
     
-    cat > "$${CONFIG_DIR}/grafana/provisioning/datasources/datasources.yml" <<'EOFGDS'
+    cat > "$${CONFIG_DIR}/grafana/provisioning/datasources/datasources.yml" <<EOFGDS
 apiVersion: 1
 
 datasources:
@@ -381,6 +381,14 @@ datasources:
     editable: true
     jsonData:
       maxLines: 1000
+
+  - name: CloudWatch
+    type: cloudwatch
+    access: proxy
+    editable: true
+    jsonData:
+      authType: default
+      defaultRegion: ${aws_region}
 EOFGDS
 }
 

@@ -3,10 +3,10 @@ package broadcaster
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"pollflow/poll-broker/internal/db"
+	"pollflow/poll-broker/internal/logger"
 	"pollflow/poll-broker/internal/redis"
 )
 
@@ -33,7 +33,10 @@ func (b *Broadcaster) Start(ctx context.Context) {
 	ticker := time.NewTicker(b.interval)
 	defer ticker.Stop()
 
-	log.Printf("Results broadcaster started (interval: %v)", b.interval)
+	logger.Log.WithFields(logger.LogFields{
+		"event":    "broadcaster_started",
+		"interval": b.interval.String(),
+	}).Info("Results broadcaster started")
 
 	// Run immediately on start
 	b.broadcastResults(ctx)
@@ -43,10 +46,10 @@ func (b *Broadcaster) Start(ctx context.Context) {
 		case <-ticker.C:
 			b.broadcastResults(ctx)
 		case <-b.stopCh:
-			log.Println("Results broadcaster stopped")
+			logger.Log.WithField("event", "broadcaster_stopped").Info("Results broadcaster stopped")
 			return
 		case <-ctx.Done():
-			log.Println("Results broadcaster context cancelled")
+			logger.Log.WithField("event", "broadcaster_cancelled").Info("Results broadcaster context cancelled")
 			return
 		}
 	}
@@ -62,7 +65,10 @@ func (b *Broadcaster) broadcastResults(ctx context.Context) {
 	// Get all active polls
 	polls, err := b.db.GetActivePolls(ctx)
 	if err != nil {
-		log.Printf("Error getting active polls: %v", err)
+		logger.Log.WithFields(logger.LogFields{
+			"event": "get_active_polls_failed",
+			"error": err.Error(),
+		}).Error("Error getting active polls")
 		return
 	}
 
@@ -70,11 +76,18 @@ func (b *Broadcaster) broadcastResults(ctx context.Context) {
 		return
 	}
 
-	log.Printf("Broadcasting results for %d active poll(s)", len(polls))
+	logger.Log.WithFields(logger.LogFields{
+		"event":        "broadcast_results_start",
+		"active_polls": len(polls),
+	}).Info("Broadcasting results for active polls")
 
 	for _, poll := range polls {
 		if err := b.broadcastPollResults(ctx, poll.ID); err != nil {
-			log.Printf("Failed to broadcast results for poll %d: %v", poll.ID, err)
+			logger.Log.WithFields(logger.LogFields{
+				"event":   "broadcast_poll_failed",
+				"poll_id": poll.ID,
+				"error":   err.Error(),
+			}).Error("Failed to broadcast results for poll")
 			continue
 		}
 	}
@@ -101,8 +114,13 @@ func (b *Broadcaster) broadcastPollResults(ctx context.Context, pollID int) erro
 		return fmt.Errorf("failed to publish results: %w", err)
 	}
 
-	log.Printf("Broadcast results for poll %d: A=%d, B=%d, Total=%d",
-		pollID, results.OptionACount, results.OptionBCount, results.TotalVotes)
+	logger.Log.WithFields(logger.LogFields{
+		"event":          "broadcast_poll_success",
+		"poll_id":        pollID,
+		"option_a_count": results.OptionACount,
+		"option_b_count": results.OptionBCount,
+		"total_votes":    results.TotalVotes,
+	}).Info("Broadcast results for poll")
 
 	return nil
 }

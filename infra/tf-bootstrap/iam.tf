@@ -241,3 +241,66 @@ resource "aws_iam_role_policy" "eventbridge_admin" {
     ]
   })
 }
+
+# Route53 - For DNS management (private hosted zones for service discovery)
+resource "aws_iam_role_policy" "route53_admin" {
+  name = "Route53AdminAccess"
+  role = aws_iam_role.project_role.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "Route53HostedZoneManagement"
+        Effect = "Allow"
+        Action = [
+          "route53:CreateHostedZone",
+          "route53:DeleteHostedZone",
+          "route53:GetHostedZone",
+          "route53:ListHostedZones",
+          "route53:ListHostedZonesByName",
+          "route53:UpdateHostedZoneComment",
+          "route53:GetHostedZoneCount",
+          "route53:ListTagsForResource",
+          "route53:ChangeTagsForResource"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "Route53RecordManagement"
+        Effect = "Allow"
+        Action = [
+          "route53:ChangeResourceRecordSets",
+          "route53:GetChange",
+          "route53:ListResourceRecordSets",
+          "route53:GetHostedZoneLimit"
+        ]
+        Resource = [
+          "arn:aws:route53:::hostedzone/*",
+          "arn:aws:route53:::change/*"
+        ]
+      },
+      {
+        Sid    = "Route53VPCAssociation"
+        Effect = "Allow"
+        Action = [
+          "route53:AssociateVPCWithHostedZone",
+          "route53:DisassociateVPCFromHostedZone",
+          "route53:ListVPCAssociationAuthorizations",
+          "route53:CreateVPCAssociationAuthorization",
+          "route53:DeleteVPCAssociationAuthorization"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "EC2DescribeForRoute53"
+        Effect = "Allow"
+        Action = [
+          "ec2:DescribeVpcs",
+          "ec2:DescribeRegions"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}

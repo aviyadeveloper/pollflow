@@ -8,9 +8,9 @@ export const POST: RequestHandler = async ({
   request,
   getClientAddress,
 }) => {
-  try {
-    const pollId = parseInt(params.id);
+  const pollId = parseInt(params.id);
 
+  try {
     if (isNaN(pollId)) {
       return json({ error: "Invalid poll ID" }, { status: 400 });
     }

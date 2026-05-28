@@ -68,6 +68,8 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=
+      - LOKI_URL=${LOKI_URL:-}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
     ports:
       - "3000:3000"
     depends_on:
