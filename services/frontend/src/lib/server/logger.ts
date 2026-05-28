@@ -4,7 +4,7 @@ import pino from "pino";
 const lokiURL = process.env.LOKI_URL;
 const appEnv = process.env.APP_ENV || "development";
 
-// Configure pino logger with optional Loki transport
+// Configure pino logger
 const options: pino.LoggerOptions = {
   level: process.env.LOG_LEVEL || "info",
   base: {
@@ -12,16 +12,12 @@ const options: pino.LoggerOptions = {
     environment: appEnv,
   },
   timestamp: pino.stdTimeFunctions.isoTime,
-};
-
-// Only add custom formatters if NOT using Loki (Loki transport expects standard pino format)
-if (!lokiURL) {
-  options.formatters = {
+  formatters: {
     level: (label) => {
       return { level: label };
     },
-  };
-}
+  },
+};
 
 // Add Loki transport if URL is configured
 if (lokiURL) {
@@ -33,6 +29,9 @@ if (lokiURL) {
       host: lokiURL,
       labels: { service: "frontend", environment: appEnv },
       silenceErrors: false,
+      // Pino-loki configuration for better compatibility
+      replaceTimestamp: false,
+      convertArrays: false,
     },
   };
 }
