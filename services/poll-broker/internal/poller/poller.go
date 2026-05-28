@@ -3,10 +3,10 @@ package poller
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"pollflow/poll-broker/internal/db"
+	"pollflow/poll-broker/internal/logger"
 	"pollflow/poll-broker/internal/redis"
 )
 
@@ -33,7 +33,7 @@ func (p *Poller) Start(ctx context.Context) {
 	ticker := time.NewTicker(p.interval)
 	defer ticker.Stop()
 
-	log.Printf("Poll lifecycle manager started (interval: %v)", p.interval)
+	logger.WithEvent("poller_started").WithField("interval", p.interval.String()).Info("Poll lifecycle manager started")
 
 	// Run immediately on start
 	p.checkPollLifecycle(ctx)
@@ -43,10 +43,10 @@ func (p *Poller) Start(ctx context.Context) {
 		case <-ticker.C:
 			p.checkPollLifecycle(ctx)
 		case <-p.stopCh:
-			log.Println("Poll lifecycle manager stopped")
+			logger.WithEvent("poller_stopped").Info("Poll lifecycle manager stopped")
 			return
 		case <-ctx.Done():
-			log.Println("Poll lifecycle manager context cancelled")
+			logger.WithEvent("poller_cancelled").Info("Poll lifecycle manager context cancelled")
 			return
 		}
 	}
@@ -61,12 +61,12 @@ func (p *Poller) Stop() {
 func (p *Poller) checkPollLifecycle(ctx context.Context) {
 	// Activate pending polls
 	if err := p.activatePolls(ctx); err != nil {
-		log.Printf("Error activating polls: %v", err)
+		logger.WithEvent("poll_activation_error").WithError(err).Error("Error activating polls")
 	}
 
 	// Close active polls
 	if err := p.closePolls(ctx); err != nil {
-		log.Printf("Error closing polls: %v", err)
+		logger.WithEvent("poll_closure_error").WithError(err).Error("Error closing polls")
 	}
 }
 
@@ -81,18 +81,33 @@ func (p *Poller) activatePolls(ctx context.Context) error {
 		return nil
 	}
 
-	log.Printf("Activating %d poll(s)", len(polls))
+	logger.WithFields(logger.LogFields{
+		"event": "activating_polls",
+		"count": len(polls),
+	}).Info("Activating polls")
 
 	for _, poll := range polls {
 		if err := p.db.UpdatePollStatus(ctx, poll.ID, "active"); err != nil {
-			log.Printf("Failed to activate poll %d: %v", poll.ID, err)
+			logger.WithFields(logger.LogFields{
+				"poll_id": poll.ID,
+				"event":   "poll_activation_failed",
+				"error":   err,
+			}).Error("Failed to activate poll")
 			continue
 		}
-		log.Printf(" - - Activated poll %d: %s", poll.ID, poll.Title)
+		logger.WithFields(logger.LogFields{
+			"poll_id": poll.ID,
+			"event":   "poll_activated",
+			"title":   poll.Title,
+		}).Info("Poll activated")
 
 		// Publish lifecycle event
 		if err := p.redis.PublishLifecycleEvent(ctx, poll.ID, redis.EventPollActivated); err != nil {
-			log.Printf("Failed to publish activation event for poll %d: %v", poll.ID, err)
+			logger.WithFields(logger.LogFields{
+				"poll_id": poll.ID,
+				"event":   "lifecycle_publish_failed",
+				"error":   err,
+			}).Warn("Failed to publish activation event")
 			// Don't fail the activation if pub/sub fails
 		}
 	}
@@ -111,18 +126,33 @@ func (p *Poller) closePolls(ctx context.Context) error {
 		return nil
 	}
 
-	log.Printf("Closing %d poll(s)", len(polls))
+	logger.WithFields(logger.LogFields{
+		"event": "closing_polls",
+		"count": len(polls),
+	}).Info("Closing polls")
 
 	for _, poll := range polls {
 		if err := p.db.UpdatePollStatus(ctx, poll.ID, "closed"); err != nil {
-			log.Printf("Failed to close poll %d: %v", poll.ID, err)
+			logger.WithFields(logger.LogFields{
+				"poll_id": poll.ID,
+				"event":   "poll_closure_failed",
+				"error":   err,
+			}).Error("Failed to close poll")
 			continue
 		}
-		log.Printf(" - - Closed poll %d: %s", poll.ID, poll.Title)
+		logger.WithFields(logger.LogFields{
+			"poll_id": poll.ID,
+			"event":   "poll_closed",
+			"title":   poll.Title,
+		}).Info("Poll closed")
 
 		// Publish lifecycle event
 		if err := p.redis.PublishLifecycleEvent(ctx, poll.ID, redis.EventPollClosed); err != nil {
-			log.Printf("Failed to publish closure event for poll %d: %v", poll.ID, err)
+			logger.WithFields(logger.LogFields{
+				"poll_id": poll.ID,
+				"event":   "lifecycle_publish_failed",
+				"error":   err,
+			}).Warn("Failed to publish closure event")
 			// Don't fail the closure if pub/sub fails
 		}
 	}

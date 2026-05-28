@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"pollflow/poll-broker/internal/logger"
+
 	"github.com/redis/go-redis/v9"
 )
 
@@ -106,7 +108,11 @@ func (c *Client) PublishResults(ctx context.Context, results PollResultsPayload)
 	}
 
 	if numSubscribers > 0 {
-		fmt.Printf("📊 Published results for poll %d to %d subscriber(s)\n", results.PollID, numSubscribers)
+		logger.WithFields(logger.LogFields{
+			"poll_id":     results.PollID,
+			"event":       "results_published",
+			"subscribers": numSubscribers,
+		}).Debug("Published results to subscribers")
 	}
 
 	return nil
@@ -130,7 +136,12 @@ func (c *Client) PublishLifecycleEvent(ctx context.Context, pollID int, event st
 		return fmt.Errorf("failed to publish lifecycle event: %w", err)
 	}
 
-	fmt.Printf("📢 Published lifecycle event '%s' for poll %d to %d subscriber(s)\n", event, pollID, numSubscribers)
+	logger.WithFields(logger.LogFields{
+		"poll_id":         pollID,
+		"event":           "lifecycle_published",
+		"lifecycle_event": event,
+		"subscribers":     numSubscribers,
+	}).Info("Published lifecycle event")
 
 	return nil
 }

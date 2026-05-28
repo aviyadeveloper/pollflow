@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"os"
 	"os/signal"
 	"sync"
@@ -12,18 +11,21 @@ import (
 	"pollflow/poll-broker/internal/broadcaster"
 	"pollflow/poll-broker/internal/config"
 	"pollflow/poll-broker/internal/db"
+	"pollflow/poll-broker/internal/logger"
 	"pollflow/poll-broker/internal/poller"
 	"pollflow/poll-broker/internal/processor"
 	"pollflow/poll-broker/internal/redis"
 )
 
 func main() {
-	log.Println("Starting poll-broker service...")
+	// Initialize structured logging
+	logger.Initialize()
+	logger.Log.Info("Starting poll-broker service")
 
 	// Load configuration
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("Failed to load configuration: %v", err)
+		logger.Log.WithError(err).Fatal("Failed to load configuration")
 	}
 
 	// Create main context
@@ -33,18 +35,18 @@ func main() {
 	// Initialize database client
 	dbClient, err := db.NewClient(ctx, cfg.DatabaseURL())
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		logger.Log.WithError(err).Fatal("Failed to connect to database")
 	}
 	defer dbClient.Close()
-	log.Println("Connected to PostgreSQL")
+	logger.Log.Info("Connected to PostgreSQL")
 
 	// Initialize Redis client
 	redisClient, err := redis.NewClient(ctx, cfg.RedisAddr())
 	if err != nil {
-		log.Fatalf("Failed to connect to Redis: %v", err)
+		logger.Log.WithError(err).Fatal("Failed to connect to Redis")
 	}
 	defer redisClient.Close()
-	log.Println("Connected to Redis")
+	logger.Log.Info("Connected to Redis")
 
 	// Create components
 	pollPoller := poller.New(dbClient, redisClient, 10*time.Second)
@@ -72,7 +74,7 @@ func main() {
 		resultsBroadcaster.Start(ctx)
 	}()
 
-	log.Println("All components started successfully")
+	logger.Log.Info("All components started successfully")
 
 	// Wait for interrupt signal
 	sigChan := make(chan os.Signal, 1)
@@ -80,7 +82,7 @@ func main() {
 
 	// Block until signal received
 	sig := <-sigChan
-	log.Printf("Received signal: %v. Initiating graceful shutdown...", sig)
+	logger.Log.WithField("signal", sig.String()).Info("Received signal, initiating graceful shutdown")
 
 	// Cancel context to stop all components
 	cancel()
@@ -99,10 +101,10 @@ func main() {
 
 	select {
 	case <-done:
-		log.Println("All components stopped gracefully")
+		logger.Log.Info("All components stopped gracefully")
 	case <-time.After(10 * time.Second):
-		log.Println("Shutdown timeout exceeded, forcing exit")
+		logger.Log.Warn("Shutdown timeout exceeded, forcing exit")
 	}
 
-	log.Println("poll-broker service stopped")
+	logger.Log.Info("poll-broker service stopped")
 }

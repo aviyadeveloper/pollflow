@@ -3,11 +3,11 @@ package processor
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
 	"pollflow/poll-broker/internal/db"
+	"pollflow/poll-broker/internal/logger"
 	"pollflow/poll-broker/internal/redis"
 )
 
@@ -29,15 +29,15 @@ func New(dbClient *db.Client, redisClient *redis.Client) *Processor {
 
 // Start begins consuming votes from the Redis queue
 func (p *Processor) Start(ctx context.Context) {
-	log.Println("Vote processor started")
+	logger.WithEvent("processor_started").Info("Vote processor started")
 
 	for {
 		select {
 		case <-p.stopCh:
-			log.Println("Vote processor stopped")
+			logger.WithEvent("processor_stopped").Info("Vote processor stopped")
 			return
 		case <-ctx.Done():
-			log.Println("Vote processor context cancelled")
+			logger.WithEvent("processor_cancelled").Info("Vote processor context cancelled")
 			return
 		default:
 			p.processNextVote(ctx)
@@ -54,7 +54,7 @@ func (p *Processor) Stop() {
 func (p *Processor) processNextVote(ctx context.Context) {
 	vote, err := p.redis.PopVote(ctx)
 	if err != nil {
-		log.Printf("Error popping vote from queue: %v", err)
+		logger.WithEvent("vote_pop_error").WithError(err).Error("Error popping vote from queue")
 		time.Sleep(1 * time.Second) // Back off on error
 		return
 	}
@@ -67,7 +67,13 @@ func (p *Processor) processNextVote(ctx context.Context) {
 
 	// Validate vote data
 	if err := p.validateVote(vote); err != nil {
-		log.Printf("Invalid vote data: %v - Vote: %+v", err, vote)
+		logger.WithFields(logger.LogFields{
+			"event":   "vote_validation_failed",
+			"error":   err,
+			"poll_id": vote.PollID,
+			"user_ip": vote.UserIP,
+			"option":  vote.Option,
+		}).Warn("Invalid vote data")
 		return // Drop invalid vote
 	}
 
@@ -75,14 +81,29 @@ func (p *Processor) processNextVote(ctx context.Context) {
 	if err := p.db.InsertVote(ctx, vote.PollID, vote.UserIP, vote.Option); err != nil {
 		// Check if it's a duplicate vote error (UNIQUE constraint)
 		if strings.Contains(err.Error(), "duplicate") || strings.Contains(err.Error(), "unique") {
-			log.Printf("Duplicate vote ignored: poll_id=%d, user_ip=%s", vote.PollID, vote.UserIP)
+			logger.WithFields(logger.LogFields{
+				"poll_id": vote.PollID,
+				"event":   "duplicate_vote",
+				"user_ip": vote.UserIP,
+			}).Info("Duplicate vote ignored")
 		} else {
-			log.Printf("Failed to insert vote: %v - Vote: %+v", err, vote)
+			logger.WithFields(logger.LogFields{
+				"poll_id": vote.PollID,
+				"event":   "vote_insert_failed",
+				"error":   err,
+				"user_ip": vote.UserIP,
+				"option":  vote.Option,
+			}).Error("Failed to insert vote")
 		}
 		return
 	}
 
-	log.Printf("Vote recorded: poll_id=%d, user_ip=%s, option=%s", vote.PollID, vote.UserIP, vote.Option)
+	logger.WithFields(logger.LogFields{
+		"poll_id": vote.PollID,
+		"event":   "vote_recorded",
+		"user_ip": vote.UserIP,
+		"option":  vote.Option,
+	}).Info("Vote recorded")
 }
 
 // validateVote checks if vote data is valid
