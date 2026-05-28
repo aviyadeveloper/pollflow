@@ -72,11 +72,13 @@
   });
 
   const nextPollDisplay = $derived(() => {
-    if (nextPollSeconds <= 0) return "Refresh";
+    if (nextPollSeconds <= 0) return "...";
     const minutes = Math.floor(nextPollSeconds / 60);
     const seconds = nextPollSeconds % 60;
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   });
+
+  const isWaitingForPoll = $derived(() => nextPollSeconds <= 0);
 
   onMount(() => {
     updateNextPollCountdown();
@@ -158,7 +160,7 @@
       </div>
 
       <div class="filter-group timer-group">
-        <div class="timer-circle">
+        <div class="timer-circle" class:waiting={isWaitingForPoll()}>
           <svg width="50" height="50" viewBox="0 0 50 50">
             <circle
               cx="25"
@@ -185,6 +187,16 @@
               <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
                 <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+              </linearGradient>
+              <linearGradient
+                id="waiting-gradient"
+                x1="0%"
+                y1="0%"
+                x2="100%"
+                y2="100%"
+              >
+                <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:1" />
               </linearGradient>
             </defs>
           </svg>
@@ -313,6 +325,26 @@
     height: 50px;
   }
 
+  .timer-circle.waiting {
+    animation: pulse-glow 1.5s ease-in-out infinite;
+  }
+
+  .timer-circle.waiting .timer-progress {
+    stroke: url(#waiting-gradient);
+  }
+
+  @keyframes pulse-glow {
+    0%,
+    100% {
+      filter: drop-shadow(0 0 4px rgba(59, 130, 246, 0.6));
+      transform: scale(1);
+    }
+    50% {
+      filter: drop-shadow(0 0 12px rgba(139, 92, 246, 0.8));
+      transform: scale(1.05);
+    }
+  }
+
   .timer-progress {
     transition: stroke-dashoffset 1s linear;
   }
@@ -341,6 +373,21 @@
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     line-height: 1;
+  }
+
+  .timer-circle.waiting .timer-value {
+    color: #34d399;
+    animation: pulse-text 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse-text {
+    0%,
+    100% {
+      opacity: 0.8;
+    }
+    50% {
+      opacity: 1;
+    }
   }
 
   .empty-state {
