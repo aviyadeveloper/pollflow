@@ -45,13 +45,11 @@ COPY --from=builder /app/build ./build
 # Expose port
 EXPOSE 3000
 
-# Set environment variables
-ENV NODE_ENV=production
-ENV PORT=3000
-
 # Health check
+# Note: Healthcheck uses hardcoded port 3000. If PORT changes, update this.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3000/', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 # Start the application
+# APP_ENV and PORT must be set at runtime via docker-compose or k8s
 CMD ["node", "build"]

@@ -24,6 +24,9 @@ spec:
         - name: poll-broker
           image: 058264398399.dkr.ecr.eu-west-3.amazonaws.com/pollflow-poll-broker:latest
           env:
+            # Environment
+            - name: APP_ENV
+              value: "production"
             # RDS connection info (from ConfigMap)
             - name: DB_HOST
               valueFrom:

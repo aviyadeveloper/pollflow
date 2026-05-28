@@ -1,12 +1,44 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import type { PageData } from "./$types";
+  import type { Poll } from "$lib/types";
   import PollCard from "$lib/components/PollCard.svelte";
+  import { subscribeToPollLifecycle } from "$lib/stores/pollLifecycle";
 
   let { data }: { data: PageData } = $props();
 
+  // Make polls reactive so we can add/update them from lifecycle events
+  let pollsRaw = $state<Poll[]>(data.polls || []);
+
+  // Sorted polls: active first (newest first), then closed (most recently closed)
+  const polls = $derived(() => {
+    return [...pollsRaw].sort((a, b) => {
+      // Active polls first
+      if (a.status === "active" && b.status !== "active") return -1;
+      if (a.status !== "active" && b.status === "active") return 1;
+
+      const aStartTime = new Date(a.startTime).getTime();
+      const bStartTime = new Date(b.startTime).getTime();
+      const aEndTime = new Date(a.endTime).getTime();
+      const bEndTime = new Date(b.endTime).getTime();
+
+      // Within active: sort by start_time DESC (newest first, appears at top)
+      if (a.status === "active" && b.status === "active") {
+        return bStartTime - aStartTime;
+      }
+
+      // Within closed: sort by end_time DESC (most recently closed first)
+      if (a.status === "closed" && b.status === "closed") {
+        return bEndTime - aEndTime;
+      }
+
+      return 0;
+    });
+  });
+
   let nextPollSeconds = $state(0);
   let interval: ReturnType<typeof setInterval> | null = null;
+  let unsubscribeLifecycle: (() => void) | null = null;
 
   // Filter state
   let selectedStatus = $state<"all" | "active" | "ended">("all");
@@ -14,15 +46,14 @@
 
   // Get unique categories from polls
   const categories = $derived(() => {
-    const cats = new Set(
-      data.polls.map((p: (typeof data.polls)[0]) => p.pollCategory),
-    );
+    if (!pollsRaw || pollsRaw.length === 0) return [];
+    const cats = new Set(pollsRaw.map((p: Poll) => p.pollCategory));
     return Array.from(cats).sort();
   });
 
   // Filtered polls based on selected filters
   const filteredPolls = $derived(() => {
-    return data.polls.filter((poll: (typeof data.polls)[0]) => {
+    return polls().filter((poll: Poll) => {
       // Status filter
       if (selectedStatus === "active" && poll.status !== "active") return false;
       if (selectedStatus === "ended" && poll.status === "active") return false;
@@ -50,27 +81,62 @@
   onMount(() => {
     updateNextPollCountdown();
     interval = setInterval(updateNextPollCountdown, 1000);
+
+    // Subscribe to poll lifecycle events
+    unsubscribeLifecycle = subscribeToPollLifecycle(async (event) => {
+      if (event.event === "poll_activated") {
+        console.log(`Poll ${event.pollId} activated, fetching data...`);
+
+        // Fetch the full poll data
+        try {
+          const response = await fetch(`/api/polls/${event.pollId}`);
+          if (response.ok) {
+            const data = await response.json();
+            const newPoll = data.poll as Poll;
+
+            // Add to polls array (will be auto-sorted by derived state)
+            pollsRaw = [newPoll, ...pollsRaw];
+            console.log(`Poll ${event.pollId} added to UI`);
+          } else {
+            console.error(
+              `Failed to fetch poll ${event.pollId}:`,
+              response.statusText,
+            );
+          }
+        } catch (error) {
+          console.error(`Error fetching poll ${event.pollId}:`, error);
+        }
+      } else if (event.event === "poll_closed") {
+        console.log(`Poll ${event.pollId} closed, updating status...`);
+
+        // Find and update the poll status
+        const pollIndex = pollsRaw.findIndex((p) => p.id === event.pollId);
+        if (pollIndex !== -1) {
+          // Update the poll status to closed (will be auto-sorted by derived state)
+          pollsRaw[pollIndex] = { ...pollsRaw[pollIndex], status: "closed" };
+          console.log(`Poll ${event.pollId} marked as closed`);
+        }
+      }
+    });
   });
 
   onDestroy(() => {
     if (interval) clearInterval(interval);
+    if (unsubscribeLifecycle) unsubscribeLifecycle();
   });
 
   function updateNextPollCountdown() {
-    if (data.polls.length === 0) {
+    if (pollsRaw.length === 0) {
       nextPollSeconds = 0;
       return;
     }
 
     // Find the poll with the most recent start time (newest poll)
-    const mostRecentPoll = data.polls.reduce(
-      (latest: (typeof data.polls)[0], poll: (typeof data.polls)[0]) => {
-        const pollStart = new Date(poll.startTime).getTime();
-        const latestStart = new Date(latest.startTime).getTime();
-        return pollStart > latestStart ? poll : latest;
-      },
-      data.polls[0],
-    );
+    const mostRecentPoll = pollsRaw.reduce((latest: Poll, poll: Poll) => {
+      const pollStart = new Date(poll.startTime).getTime();
+      const latestStart = new Date(latest.startTime).getTime();
+      return pollStart > latestStart ? poll : latest;
+    }, pollsRaw[0]);
 
     const latestStart = new Date(mostRecentPoll.startTime).getTime();
 

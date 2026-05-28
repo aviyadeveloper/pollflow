@@ -30,9 +30,19 @@ type PollResultsPayload struct {
 	TotalVotes   int `json:"total_votes"`
 }
 
+// PollLifecyclePayload represents poll lifecycle events for pub/sub
+type PollLifecyclePayload struct {
+	PollID    int    `json:"poll_id"`
+	Event     string `json:"event"` // "poll_activated" or "poll_closed"
+	Timestamp int64  `json:"timestamp"`
+}
+
 const (
-	VotesQueueKey  = "votes:queue"
-	ResultsChannel = "poll:results:%d" // Format with poll ID
+	VotesQueueKey      = "votes:queue"
+	ResultsChannel     = "poll:results:%d" // Format with poll ID
+	LifecycleChannel   = "poll:lifecycle"  // Global lifecycle events
+	EventPollActivated = "poll_activated"
+	EventPollClosed    = "poll_closed"
 )
 
 // NewClient creates a new Redis client
@@ -89,9 +99,38 @@ func (c *Client) PublishResults(ctx context.Context, results PollResultsPayload)
 	}
 
 	channel := fmt.Sprintf(ResultsChannel, results.PollID)
-	if err := c.client.Publish(ctx, channel, data).Err(); err != nil {
+
+	numSubscribers, err := c.client.Publish(ctx, channel, data).Result()
+	if err != nil {
 		return fmt.Errorf("failed to publish results: %w", err)
 	}
+
+	if numSubscribers > 0 {
+		fmt.Printf("📊 Published results for poll %d to %d subscriber(s)\n", results.PollID, numSubscribers)
+	}
+
+	return nil
+}
+
+// PublishLifecycleEvent publishes poll lifecycle events to the global lifecycle channel
+func (c *Client) PublishLifecycleEvent(ctx context.Context, pollID int, event string) error {
+	payload := PollLifecyclePayload{
+		PollID:    pollID,
+		Event:     event,
+		Timestamp: time.Now().Unix(),
+	}
+
+	data, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal lifecycle event: %w", err)
+	}
+
+	numSubscribers, err := c.client.Publish(ctx, LifecycleChannel, data).Result()
+	if err != nil {
+		return fmt.Errorf("failed to publish lifecycle event: %w", err)
+	}
+
+	fmt.Printf("📢 Published lifecycle event '%s' for poll %d to %d subscriber(s)\n", event, pollID, numSubscribers)
 
 	return nil
 }

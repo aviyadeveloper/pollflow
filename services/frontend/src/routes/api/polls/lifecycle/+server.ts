@@ -1,6 +1,5 @@
 import type { RequestHandler } from "./$types";
 import { createRedisSubscriber } from "$lib/server/redis";
-import { getAllPolls } from "$lib/server/db";
 
 export const GET: RequestHandler = async () => {
   // Create a ReadableStream for Server-Sent Events
@@ -12,59 +11,51 @@ export const GET: RequestHandler = async () => {
       const subscriber = createRedisSubscriber();
 
       // Send initial connection comment
-      controller.enqueue(encoder.encode(`: connected to all polls\n\n`));
+      controller.enqueue(encoder.encode(`: connected to poll lifecycle\n\n`));
 
-      // Get all active polls to know which channels to subscribe to
-      const polls = await getAllPolls();
-      const activePolls = polls.filter((p) => p.status === "active");
-      const channels = activePolls.map((p) => `poll:results:${p.id}`);
+      const channel = "poll:lifecycle";
 
-      console.log(
-        `SSE: Subscribing to ${channels.length} active poll channels:`,
-        channels,
-      );
+      console.log("SSE: Subscribing to poll lifecycle channel");
 
-      // Subscribe to all active poll channels
-      if (channels.length > 0) {
-        await subscriber.subscribe(...channels);
-      }
+      // Subscribe to the lifecycle channel
+      await subscriber.subscribe(channel);
 
       // Handle incoming messages
       subscriber.on("message", (ch: string, message: string) => {
-        try {
-          const raw = JSON.parse(message);
-          // Transform snake_case to camelCase
-          const results = {
-            pollId: raw.poll_id,
-            voteCountA: raw.option_a_count,
-            voteCountB: raw.option_b_count,
-            totalVotes: raw.total_votes,
-            lastUpdated: new Date().toISOString(),
-          };
+        if (ch === channel) {
+          try {
+            const raw = JSON.parse(message);
+            // Transform snake_case to camelCase
+            const event = {
+              pollId: raw.poll_id,
+              event: raw.event, // "poll_activated" or "poll_closed"
+              timestamp: raw.timestamp,
+            };
 
-          const data = `data: ${JSON.stringify(results)}\n\n`;
-          controller.enqueue(encoder.encode(data));
-        } catch (error: any) {
-          // If controller is closed, clean up the subscriber
-          if (
-            error?.code === "ERR_INVALID_STATE" ||
-            error?.message?.includes("Controller is already closed")
-          ) {
-            console.log(
-              "Controller closed for all-polls stream, cleaning up subscriber",
-            );
-            if ((controller as any)._cleanup) {
-              (controller as any)._cleanup();
+            const data = `data: ${JSON.stringify(event)}\n\n`;
+            controller.enqueue(encoder.encode(data));
+          } catch (error: any) {
+            // If controller is closed, clean up the subscriber
+            if (
+              error?.code === "ERR_INVALID_STATE" ||
+              error?.message?.includes("Controller is already closed")
+            ) {
+              console.log(
+                "Controller closed for lifecycle stream, cleaning up subscriber",
+              );
+              if ((controller as any)._cleanup) {
+                (controller as any)._cleanup();
+              }
+            } else {
+              console.error("Error parsing/sending lifecycle event:", error);
             }
-          } else {
-            console.error("Error parsing/sending results:", error);
           }
         }
       });
 
       // Handle errors
       subscriber.on("error", (error: Error) => {
-        console.error("Redis subscriber error for all-polls stream:", error);
+        console.error("Redis subscriber error for lifecycle stream:", error);
       });
 
       // Keep connection alive with periodic heartbeat
@@ -74,7 +65,7 @@ export const GET: RequestHandler = async () => {
         } catch (error: any) {
           // Controller closed, clean up and stop heartbeat
           console.log(
-            "Heartbeat detected closed controller for all-polls stream, cleaning up",
+            "Heartbeat detected closed controller for lifecycle stream, cleaning up",
           );
           clearInterval(heartbeat);
           if ((controller as any)._cleanup) {
@@ -99,11 +90,11 @@ export const GET: RequestHandler = async () => {
     },
 
     cancel(controller) {
-      console.log("Client disconnected from all-polls stream");
+      console.log("Client disconnected from lifecycle stream");
       if ((controller as any)._cleanup) {
         (controller as any)._cleanup().catch((err: any) => {
           console.log(
-            "Error during results SSE cancel:",
+            "Error during lifecycle SSE cancel:",
             err.code || err.message,
           );
         });

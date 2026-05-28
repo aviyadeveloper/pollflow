@@ -7,7 +7,7 @@ export const load: PageLoad = async ({ fetch }) => {
     const data = (await response.json()) as { polls: Poll[] };
 
     return {
-      polls: data.polls,
+      polls: data.polls || [],
     };
   } catch (error) {
     console.error("Error loading polls:", error);

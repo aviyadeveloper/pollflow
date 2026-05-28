@@ -90,13 +90,20 @@ func (c *Config) Validate() error {
 // DatabaseURL returns a PostgreSQL connection string
 // Username and password are URL-encoded to handle special characters
 func (c *Config) DatabaseURL() string {
+	// Determine SSL mode based on environment (production vs development)
+	sslMode := "disable" // default for development
+	if appEnv := os.Getenv("APP_ENV"); appEnv == "production" {
+		sslMode = "require"
+	}
+
 	return fmt.Sprintf(
-		"postgres://%s:%s@%s:%d/%s?sslmode=require",
+		"postgres://%s:%s@%s:%d/%s?sslmode=%s",
 		url.PathEscape(c.Database.User),
 		url.PathEscape(c.Database.Password),
 		c.Database.Host,
 		c.Database.Port,
 		c.Database.Name,
+		sslMode,
 	)
 }
 

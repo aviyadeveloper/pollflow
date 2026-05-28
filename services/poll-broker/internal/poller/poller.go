@@ -7,19 +7,22 @@ import (
 	"time"
 
 	"pollflow/poll-broker/internal/db"
+	"pollflow/poll-broker/internal/redis"
 )
 
 // Poller manages poll lifecycle state transitions
 type Poller struct {
 	db       *db.Client
+	redis    *redis.Client
 	interval time.Duration
 	stopCh   chan struct{}
 }
 
 // New creates a new poll lifecycle manager
-func New(dbClient *db.Client, interval time.Duration) *Poller {
+func New(dbClient *db.Client, redisClient *redis.Client, interval time.Duration) *Poller {
 	return &Poller{
 		db:       dbClient,
+		redis:    redisClient,
 		interval: interval,
 		stopCh:   make(chan struct{}),
 	}
@@ -85,7 +88,13 @@ func (p *Poller) activatePolls(ctx context.Context) error {
 			log.Printf("Failed to activate poll %d: %v", poll.ID, err)
 			continue
 		}
-		log.Printf("Activated poll %d: %s", poll.ID, poll.Title)
+		log.Printf(" - - Activated poll %d: %s", poll.ID, poll.Title)
+
+		// Publish lifecycle event
+		if err := p.redis.PublishLifecycleEvent(ctx, poll.ID, redis.EventPollActivated); err != nil {
+			log.Printf("Failed to publish activation event for poll %d: %v", poll.ID, err)
+			// Don't fail the activation if pub/sub fails
+		}
 	}
 
 	return nil
@@ -109,7 +118,13 @@ func (p *Poller) closePolls(ctx context.Context) error {
 			log.Printf("Failed to close poll %d: %v", poll.ID, err)
 			continue
 		}
-		log.Printf("Closed poll %d: %s", poll.ID, poll.Title)
+		log.Printf(" - - Closed poll %d: %s", poll.ID, poll.Title)
+
+		// Publish lifecycle event
+		if err := p.redis.PublishLifecycleEvent(ctx, poll.ID, redis.EventPollClosed); err != nil {
+			log.Printf("Failed to publish closure event for poll %d: %v", poll.ID, err)
+			// Don't fail the closure if pub/sub fails
+		}
 	}
 
 	return nil

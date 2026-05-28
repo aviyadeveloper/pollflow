@@ -47,7 +47,7 @@ func main() {
 	log.Println("Connected to Redis")
 
 	// Create components
-	pollPoller := poller.New(dbClient, 10*time.Second)
+	pollPoller := poller.New(dbClient, redisClient, 10*time.Second)
 	voteProcessor := processor.New(dbClient, redisClient)
 	resultsBroadcaster := broadcaster.New(dbClient, redisClient, 1*time.Second)
 

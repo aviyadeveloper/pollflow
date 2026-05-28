@@ -15,6 +15,9 @@ let pool: Pool | null = null;
 
 function getPool(): Pool {
   if (!pool) {
+    const appEnv = process.env.APP_ENV || "development";
+    const useSSL = appEnv === "production";
+
     pool = new Pool({
       host: getEnvVar("POSTGRES_HOST"),
       port: parseInt(getEnvVar("POSTGRES_PORT")),
@@ -24,9 +27,12 @@ function getPool(): Pool {
       max: 20,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 2000,
-      ssl: {
-        rejectUnauthorized: false, // RDS requires SSL but uses self-signed cert
-      },
+      // Use SSL in production (RDS), disable in development (Docker)
+      ssl: useSSL
+        ? {
+            rejectUnauthorized: false, // RDS uses self-signed cert
+          }
+        : false,
     });
 
     pool.on("connect", () => {
@@ -42,6 +48,7 @@ function getPool(): Pool {
 
 /**
  * Get all polls with vote counts ordered by active status first, then closing time
+ * Excludes pending polls (only shows active and closed)
  */
 export async function getAllPolls(): Promise<Poll[]> {
   const query = `
@@ -61,10 +68,18 @@ export async function getAllPolls(): Promise<Poll[]> {
       COUNT(v.id) as "totalVotes"
     FROM polls p
     LEFT JOIN votes v ON v.poll_id = p.id
+    WHERE p.status IN ('active', 'closed')
     GROUP BY p.id
     ORDER BY 
       CASE WHEN p.status = 'active' THEN 0 ELSE 1 END,
-      p.end_time ASC
+      CASE 
+        WHEN p.status = 'active' THEN p.start_time
+        ELSE NULL
+      END DESC,
+      CASE 
+        WHEN p.status = 'closed' THEN p.end_time
+        ELSE NULL
+      END DESC
   `;
 
   const result = await getPool().query(query);
@@ -75,6 +90,46 @@ export async function getAllPolls(): Promise<Poll[]> {
     voteCountB: parseInt(row.voteCountB) || 0,
     totalVotes: parseInt(row.totalVotes) || 0,
   }));
+}
+
+/**
+ * Get a single poll by ID with vote counts
+ */
+export async function getPollById(pollId: number): Promise<Poll | null> {
+  const query = `
+    SELECT 
+      p.id,
+      p.title,
+      p.description,
+      p.option_a as "optionA",
+      p.option_b as "optionB",
+      p.poll_category as "pollCategory",
+      p.start_time as "startTime",
+      p.end_time as "endTime",
+      p.status,
+      p.created_at as "createdAt",
+      COUNT(CASE WHEN v.option = 'a' THEN 1 END) as "voteCountA",
+      COUNT(CASE WHEN v.option = 'b' THEN 1 END) as "voteCountB",
+      COUNT(v.id) as "totalVotes"
+    FROM polls p
+    LEFT JOIN votes v ON v.poll_id = p.id
+    WHERE p.id = $1
+    GROUP BY p.id
+  `;
+
+  const result = await getPool().query(query, [pollId]);
+
+  if (result.rows.length === 0) {
+    return null;
+  }
+
+  const row = result.rows[0];
+  return {
+    ...row,
+    voteCountA: parseInt(row.voteCountA) || 0,
+    voteCountB: parseInt(row.voteCountB) || 0,
+    totalVotes: parseInt(row.totalVotes) || 0,
+  };
 }
 
 /**

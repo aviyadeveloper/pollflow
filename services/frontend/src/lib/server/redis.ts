@@ -70,6 +70,8 @@ export function createRedisSubscriber(): Redis {
     port: parseInt(getEnvVar("REDIS_PORT")),
     password: getOptionalEnvVar("REDIS_PASSWORD"),
     maxRetriesPerRequest: 3,
+    enableReadyCheck: false, // Disable INFO checks for subscriber mode
+    lazyConnect: false,
     retryStrategy(times) {
       const delay = Math.min(times * 50, 2000);
       return delay;

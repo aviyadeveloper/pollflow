@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -47,8 +45,8 @@ services:
 
   frontend:
     build:
-      context: .
-      dockerfile: services/frontend/Dockerfile
+      context: ./services/frontend
+      dockerfile: Dockerfile
       args:
         - POSTGRES_HOST=postgres
         - POSTGRES_PORT=5432
@@ -60,7 +58,7 @@ services:
         - REDIS_PASSWORD=
     container_name: pollflow-frontend
     environment:
-      - NODE_ENV=production
+      - APP_ENV=development
       - PORT=3000
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432

@@ -227,6 +227,8 @@
     <span class="tag category">{poll.pollCategory}</span>
     {#if isPollActive}
       <span class="time-badge">{formatTimeRemaining()}</span>
+    {:else}
+      <span class="closed-badge">CLOSED</span>
     {/if}
   </div>
 </div>
@@ -254,6 +256,15 @@
       0 0 20px rgba(59, 130, 246, 0.3),
       0 0 40px rgba(59, 130, 246, 0.1);
     border-color: rgba(59, 130, 246, 0.3);
+  }
+
+  .poll-card.closed {
+    opacity: 0.85;
+    border-color: #334155;
+  }
+
+  .poll-card.closed:hover {
+    opacity: 1;
   }
 
   .poll-card.just-voted {
@@ -558,6 +569,19 @@
     font-size: 0.75rem;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .closed-badge {
+    background: rgba(100, 116, 139, 0.2);
+    color: #94a3b8;
+    border: 1px solid #475569;
+    padding: 0.25rem 0.625rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
     white-space: nowrap;
   }
 </style>
