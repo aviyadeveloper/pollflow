@@ -12,24 +12,30 @@ const options: pino.LoggerOptions = {
     environment: appEnv,
   },
   timestamp: pino.stdTimeFunctions.isoTime,
-  formatters: {
+};
+
+// Only add custom formatters if NOT using Loki (pino-loki needs standard pino format)
+if (!lokiURL) {
+  options.formatters = {
     level: (label) => {
       return { level: label };
     },
-  },
-};
+  };
+}
 
 // Add Loki transport if URL is configured
 if (lokiURL) {
   options.transport = {
     target: "pino-loki",
     options: {
-      batching: true,
-      interval: 5,
       host: lokiURL,
       labels: { service: "frontend", environment: appEnv },
       silenceErrors: false,
-      // Pino-loki configuration for better compatibility
+      // v3.x batching configuration
+      batching: {
+        interval: 5000, // milliseconds
+        maxBufferSize: 10_000,
+      },
       replaceTimestamp: false,
       convertArrays: false,
     },
