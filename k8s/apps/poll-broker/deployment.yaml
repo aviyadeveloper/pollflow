@@ -32,6 +32,8 @@ spec:
               value: "http://loki.pollflow.internal:3100"
             - name: LOG_LEVEL
               value: "info"
+            - name: METRICS_PORT
+              value: "9090"
             # RDS connection info (from ConfigMap)
             - name: DB_HOST
               valueFrom:
