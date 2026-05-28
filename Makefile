@@ -1,6 +1,6 @@
 .PHONY: infra-bootstrap infra-main infra-turnoff-nat-gateway \
         infra-destroy-bootstrap infra-destroy-main infra-destroy-all \
-        bastion-ssh pre-commit
+        bastion-ssh pre-commit test test-poll-generator test-poll-broker test-frontend
 
 infra-bootstrap:
 	@echo "Bootstrap Terraform configuration for Pollflow project"
@@ -36,4 +36,20 @@ bastion-ssh:
 pre-commit:
 	@echo "Running pre-commit checks for Terraform"
 	./scripts/pre-commit.sh
+
+# Test targets
+test: test-poll-generator test-poll-broker test-frontend
+	@echo "✅ All tests passed"
+
+test-poll-generator:
+	@echo "Testing poll-generator (Python)..."
+	@cd services/poll-generator && $(MAKE) test
+
+test-poll-broker:
+	@echo "Testing poll-broker (Go)..."
+	@cd services/poll-broker && $(MAKE) test
+
+test-frontend:
+	@echo "Testing frontend (TypeScript)..."
+	@cd services/frontend && npm test
 

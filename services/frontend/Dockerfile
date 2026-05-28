@@ -1,18 +1,18 @@
 # Build stage
 FROM node:22-alpine AS builder
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Upgrade npm to 11.15.0+ for security features (minimum-release-age, allow-git)
+RUN npm install -g npm@latest
 
 WORKDIR /app
 
 # Copy package configuration files
-COPY pnpm-workspace.yaml ./pnpm-workspace.yaml
-COPY pnpm-lock.yaml ./pnpm-lock.yaml
+COPY .npmrc ./.npmrc
+COPY package-lock.json ./package-lock.json
 COPY package.json ./package.json
 
-# Install dependencies
-RUN pnpm install --frozen-lockfile
+# Install dependencies (npm ci uses exact lockfile versions)
+RUN npm ci
 
 # Copy source code
 COPY src ./src
@@ -21,23 +21,23 @@ COPY tsconfig.json ./tsconfig.json
 COPY vite.config.ts ./vite.config.ts
 
 # Build the application (no env vars needed - connections are lazy)
-RUN pnpm run build
+RUN npm run build
 
 # Production stage
 FROM node:22-alpine
 
-# Install pnpm for production dependencies
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Upgrade npm to 11.15.0+ for security features
+RUN npm install -g npm@latest
 
 WORKDIR /app
 
-# Copy workspace configuration and package files
-COPY pnpm-workspace.yaml ./pnpm-workspace.yaml
-COPY pnpm-lock.yaml ./pnpm-lock.yaml
+# Copy npm configuration and package files
+COPY .npmrc ./.npmrc
+COPY package-lock.json ./package-lock.json
 COPY package.json ./
 
 # Install production dependencies only
-RUN pnpm install --prod --frozen-lockfile
+RUN npm ci --omit=dev
 
 # Copy built application from builder
 COPY --from=builder /app/build ./build
