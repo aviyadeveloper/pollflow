@@ -4,6 +4,9 @@ on:
   pull_request:
     branches:
       - main
+    paths:
+      - "services/**"
+      - ".github/workflows/test.yml"
 
 jobs:
   test-poll-generator:
