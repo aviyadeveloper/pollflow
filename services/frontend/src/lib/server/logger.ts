@@ -37,23 +37,43 @@ class LokiStream extends Writable {
 
   _write(chunk: Buffer, encoding: string, callback: () => void) {
     const log = chunk.toString();
-    
+
     // Send to Loki asynchronously
     this.sendToLoki(log).catch((err) => {
       console.error("Loki push error:", err.message);
     });
-    
+
     // Don't wait for Loki - call callback immediately
     callback();
   }
 
   private async sendToLoki(logLine: string) {
     const timestamp = Date.now() + "000000"; // Loki needs nanoseconds
-    
+
+    // Parse pino log to extract level and convert to label
+    let levelLabel = "info";
+    try {
+      const parsed = JSON.parse(logLine);
+      if (typeof parsed.level === "number") {
+        // Pino numeric levels: 10=trace, 20=debug, 30=info, 40=warn, 50=error, 60=fatal
+        const levelMap: Record<number, string> = {
+          10: "trace",
+          20: "debug",
+          30: "info",
+          40: "warn",
+          50: "error",
+          60: "fatal",
+        };
+        levelLabel = levelMap[parsed.level] || "info";
+      }
+    } catch {
+      // If parsing fails, keep default "info"
+    }
+
     const payload = {
       streams: [
         {
-          stream: this.labels,
+          stream: { ...this.labels, level: levelLabel },
           values: [[timestamp, logLine]],
         },
       ],
