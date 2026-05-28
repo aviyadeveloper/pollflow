@@ -32,10 +32,8 @@ if (lokiURL) {
   const lokiStream = pinoLoki({
     host: lokiURL,
     labels: { service: "frontend", environment: appEnv },
-    batching: {
-      interval: 5000,
-      maxBufferSize: 10_000,
-    },
+    // Disable batching for immediate log delivery (can enable later for performance)
+    batching: false,
     replaceTimestamp: false,
     convertArrays: false,
   });
