@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"net/http"
 	"os"
 	"os/signal"
 	"sync"
@@ -15,6 +16,8 @@ import (
 	"pollflow/poll-broker/internal/poller"
 	"pollflow/poll-broker/internal/processor"
 	"pollflow/poll-broker/internal/redis"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
@@ -53,6 +56,20 @@ func main() {
 	voteProcessor := processor.New(dbClient, redisClient)
 	resultsBroadcaster := broadcaster.New(dbClient, redisClient, 1*time.Second)
 
+	// Start metrics HTTP server
+	metricsPort := getEnv("METRICS_PORT", "9090")
+	metricsServer := &http.Server{
+		Addr:    ":" + metricsPort,
+		Handler: promhttp.Handler(),
+	}
+
+	go func() {
+		logger.Log.WithField("port", metricsPort).Info("Starting metrics HTTP server")
+		if err := metricsServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			logger.Log.WithError(err).Error("Metrics server error")
+		}
+	}()
+
 	// Start components in goroutines
 	var wg sync.WaitGroup
 
@@ -87,6 +104,13 @@ func main() {
 	// Cancel context to stop all components
 	cancel()
 
+	// Shutdown metrics server
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer shutdownCancel()
+	if err := metricsServer.Shutdown(shutdownCtx); err != nil {
+		logger.Log.WithError(err).Error("Error shutting down metrics server")
+	}
+
 	// Stop components explicitly
 	pollPoller.Stop()
 	voteProcessor.Stop()
@@ -107,4 +131,12 @@ func main() {
 	}
 
 	logger.Log.Info("poll-broker service stopped")
+}
+
+// getEnv retrieves an environment variable or returns a default value
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
 }

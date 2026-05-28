@@ -40,6 +40,11 @@ spec:
               value: "production"
             - name: PORT
               value: "3000"
+            # Observability
+            - name: LOKI_URL
+              value: "http://loki.pollflow.internal:3100"
+            - name: LOG_LEVEL
+              value: "info"
             # RDS connection info (from ConfigMap)
             - name: POSTGRES_HOST
               valueFrom:
