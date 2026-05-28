@@ -101,3 +101,17 @@ module "poll_generator" {
   }
 }
 
+module "internal_tools" {
+  source = "./internal-tools"
+
+  vpc_id                    = module.vpc.vpc_id
+  public_subnet_id          = module.vpc.public_subnets[0]
+  bastion_security_group_id = module.bastion.security_group_id
+  vpc_cidr                  = module.vpc.vpc_cidr_block
+  cluster_name              = var.project_name
+  environment               = "production"
+  instance_type             = "t3.large"
+  volume_size               = 50
+  key_name                  = module.bastion.key_name
+}
+
