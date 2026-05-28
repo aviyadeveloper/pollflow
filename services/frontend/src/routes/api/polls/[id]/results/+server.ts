@@ -1,5 +1,6 @@
 import type { RequestHandler } from "./$types";
 import { createRedisSubscriber } from "$lib/server/redis";
+import { logger } from "$lib/server/logger";
 
 export const GET: RequestHandler = async ({ params }) => {
   const pollId = parseInt(params.id);
@@ -46,12 +47,12 @@ export const GET: RequestHandler = async ({ params }) => {
           } catch (error: any) {
             // If controller is closed, clean up the subscriber
             if (error?.code === 'ERR_INVALID_STATE' || error?.message?.includes('Controller is already closed')) {
-              console.log(`Controller closed for poll ${pollId}, cleaning up subscriber`);
+              logger.debug({ event: "sse_controller_closed", poll_id: pollId }, "Controller closed, cleaning up subscriber");
               if ((controller as any)._cleanup) {
                 (controller as any)._cleanup();
               }
             } else {
-              console.error("Error parsing/sending results:", error);
+              logger.error({ event: "sse_results_error", poll_id: pollId, error }, "Error parsing/sending results");
             }
           }
         }
@@ -59,7 +60,7 @@ export const GET: RequestHandler = async ({ params }) => {
 
       // Handle errors
       subscriber.on("error", (error: Error) => {
-        console.error(`Redis subscriber error for poll ${pollId}:`, error);
+        logger.error({ event: "sse_subscriber_error", poll_id: pollId, error: error.message }, "Redis subscriber error");
       });
 
       // Keep connection alive with periodic heartbeat
@@ -68,7 +69,7 @@ export const GET: RequestHandler = async ({ params }) => {
           controller.enqueue(encoder.encode(": heartbeat\n\n"));
         } catch (error: any) {
           // Controller closed, clean up and stop heartbeat
-          console.log(`Heartbeat detected closed controller for poll ${pollId}, cleaning up`);
+          logger.debug({ event: "sse_heartbeat_closed", poll_id: pollId }, "Heartbeat detected closed controller");
           clearInterval(heartbeat);
           if ((controller as any)._cleanup) {
             (controller as any)._cleanup();
@@ -85,7 +86,7 @@ export const GET: RequestHandler = async ({ params }) => {
     },
 
     cancel(controller) {
-      console.log(`Client disconnected from poll ${pollId} stream`);
+      logger.info({ event: "sse_disconnected", poll_id: pollId }, "Client disconnected from results stream");
       if ((controller as any)._cleanup) {
         (controller as any)._cleanup();
       }

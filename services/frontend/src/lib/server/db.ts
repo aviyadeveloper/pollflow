@@ -1,5 +1,6 @@
 import { Pool } from "pg";
 import type { Poll } from "$lib/types";
+import { logger } from "./logger";
 
 // Validate required environment variables (only when actually needed)
 function getEnvVar(name: string): string {
@@ -36,11 +37,11 @@ function getPool(): Pool {
     });
 
     pool.on("connect", () => {
-      console.log("✓ PostgreSQL connected");
+      logger.info({ event: "db_connected" }, "PostgreSQL connected");
     });
 
     pool.on("error", (err: Error) => {
-      console.error("PostgreSQL pool error:", err);
+      logger.error({ event: "db_pool_error", error: err.message }, "PostgreSQL pool error");
     });
   }
   return pool;
@@ -176,7 +177,7 @@ export async function closePool(): Promise<void> {
   if (pool) {
     await pool.end();
     pool = null;
-    console.log("PostgreSQL pool closed");
+    logger.info({ event: "db_closed" }, "PostgreSQL pool closed");
   }
 }
 

@@ -1,6 +1,7 @@
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 import { publishVote } from "$lib/server/redis";
+import { logger } from "$lib/server/logger";
 
 export const POST: RequestHandler = async ({
   params,
@@ -42,7 +43,7 @@ export const POST: RequestHandler = async ({
 
     return json({ success: true, message: "Vote submitted for processing" });
   } catch (error) {
-    console.error("Error submitting vote:", error);
+    logger.error({ event: "vote_submit_failed", poll_id: pollId, error }, "Error submitting vote");
     return json({ error: "Failed to submit vote" }, { status: 500 });
   }
 };

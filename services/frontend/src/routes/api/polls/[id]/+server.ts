@@ -1,6 +1,7 @@
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 import { getPollById } from "$lib/server/db";
+import { logger } from "$lib/server/logger";
 
 export const GET: RequestHandler = async ({ params }) => {
   try {
@@ -18,7 +19,7 @@ export const GET: RequestHandler = async ({ params }) => {
 
     return json({ poll });
   } catch (error) {
-    console.error(`Error fetching poll ${params.id}:`, error);
+    logger.error({ event: "poll_fetch_failed", poll_id: params.id, error }, "Error fetching poll");
     return json({ error: "Failed to fetch poll" }, { status: 500 });
   }
 };
