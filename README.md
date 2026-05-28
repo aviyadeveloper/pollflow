@@ -20,6 +20,7 @@ Pollflow is an educational project showcasing end-to-end cloud infrastructure de
 - **Applications**: Python/Flask (vote), .NET Core (worker), Node.js (result)
 - **Data Layer**: Redis cluster, PostgreSQL 16.3 Multi-AZ
 
+
 ## Architecture Overview
 
 ```mermaid
