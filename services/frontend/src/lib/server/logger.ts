@@ -9,14 +9,19 @@ const options: pino.LoggerOptions = {
   level: process.env.LOG_LEVEL || "info",
   base: {
     service: "frontend",
+    environment: appEnv,
   },
   timestamp: pino.stdTimeFunctions.isoTime,
-  formatters: {
+};
+
+// Only add custom formatters if NOT using Loki (Loki transport expects standard pino format)
+if (!lokiURL) {
+  options.formatters = {
     level: (label) => {
       return { level: label };
     },
-  },
-};
+  };
+}
 
 // Add Loki transport if URL is configured
 if (lokiURL) {
@@ -27,6 +32,7 @@ if (lokiURL) {
       interval: 5,
       host: lokiURL,
       labels: { service: "frontend", environment: appEnv },
+      silenceErrors: false,
     },
   };
 }
