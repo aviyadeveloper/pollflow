@@ -135,3 +135,34 @@ output "poll_generator_eventbridge_rule" {
   value       = module.poll_generator.eventbridge_rule_name
 }
 
+# Internal Tools / Observability Outputs
+output "internal_tools_public_ip" {
+  description = "Public IP address of the internal tools instance"
+  value       = module.internal_tools.public_ip
+}
+
+output "grafana_url" {
+  description = "Grafana dashboard URL (default: admin/pollflow2026)"
+  value       = module.internal_tools.grafana_url
+}
+
+output "prometheus_url" {
+  description = "Prometheus UI URL"
+  value       = module.internal_tools.prometheus_url
+}
+
+output "internal_tools_instance_id" {
+  description = "ID of the internal tools EC2 instance"
+  value       = module.internal_tools.instance_id
+}
+
+output "internal_tools_ssh_command" {
+  description = "SSH command to access internal tools instance via bastion"
+  value       = "ssh -i infra/tf-main/.keys/pollflow-bastion-key.pem -o StrictHostKeyChecking=no -o ProxyCommand='ssh -i infra/tf-main/.keys/pollflow-bastion-key.pem -o StrictHostKeyChecking=no -W %h:%p ubuntu@${module.bastion.bastion_public_ip}' ubuntu@${module.internal_tools.private_ip}"
+}
+
+output "internal_tools_ssh_monitor_logs" {
+  description = "SSH command to monitor user-data deployment logs in real-time"
+  value       = "ssh -i infra/tf-main/.keys/pollflow-bastion-key.pem -o StrictHostKeyChecking=no -o ProxyCommand=\"ssh -i infra/tf-main/.keys/pollflow-bastion-key.pem -o StrictHostKeyChecking=no -W %h:%p ubuntu@${module.bastion.bastion_public_ip}\" ubuntu@${module.internal_tools.private_ip} 'tail -f /var/log/user-data.log'"
+}
+
