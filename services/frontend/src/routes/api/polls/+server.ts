@@ -8,7 +8,10 @@ export const GET: RequestHandler = async () => {
     const polls = await getAllPolls();
     return json({ polls });
   } catch (error) {
-    logger.error({ event: "polls_fetch_failed", error }, "Error fetching all polls");
+    logger.error(
+      { event: "polls_fetch_failed", error },
+      "Error fetching all polls",
+    );
     return json({ error: "Failed to fetch polls" }, { status: 500 });
   }
 };

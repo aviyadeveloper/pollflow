@@ -41,7 +41,10 @@ function getPool(): Pool {
     });
 
     pool.on("error", (err: Error) => {
-      logger.error({ event: "db_pool_error", error: err.message }, "PostgreSQL pool error");
+      logger.error(
+        { event: "db_pool_error", error: err.message },
+        "PostgreSQL pool error",
+      );
     });
   }
   return pool;

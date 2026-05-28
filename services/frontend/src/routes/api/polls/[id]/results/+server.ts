@@ -46,13 +46,22 @@ export const GET: RequestHandler = async ({ params }) => {
             controller.enqueue(encoder.encode(data));
           } catch (error: any) {
             // If controller is closed, clean up the subscriber
-            if (error?.code === 'ERR_INVALID_STATE' || error?.message?.includes('Controller is already closed')) {
-              logger.debug({ event: "sse_controller_closed", poll_id: pollId }, "Controller closed, cleaning up subscriber");
+            if (
+              error?.code === "ERR_INVALID_STATE" ||
+              error?.message?.includes("Controller is already closed")
+            ) {
+              logger.debug(
+                { event: "sse_controller_closed", poll_id: pollId },
+                "Controller closed, cleaning up subscriber",
+              );
               if ((controller as any)._cleanup) {
                 (controller as any)._cleanup();
               }
             } else {
-              logger.error({ event: "sse_results_error", poll_id: pollId, error }, "Error parsing/sending results");
+              logger.error(
+                { event: "sse_results_error", poll_id: pollId, error },
+                "Error parsing/sending results",
+              );
             }
           }
         }
@@ -60,7 +69,14 @@ export const GET: RequestHandler = async ({ params }) => {
 
       // Handle errors
       subscriber.on("error", (error: Error) => {
-        logger.error({ event: "sse_subscriber_error", poll_id: pollId, error: error.message }, "Redis subscriber error");
+        logger.error(
+          {
+            event: "sse_subscriber_error",
+            poll_id: pollId,
+            error: error.message,
+          },
+          "Redis subscriber error",
+        );
       });
 
       // Keep connection alive with periodic heartbeat
@@ -69,7 +85,10 @@ export const GET: RequestHandler = async ({ params }) => {
           controller.enqueue(encoder.encode(": heartbeat\n\n"));
         } catch (error: any) {
           // Controller closed, clean up and stop heartbeat
-          logger.debug({ event: "sse_heartbeat_closed", poll_id: pollId }, "Heartbeat detected closed controller");
+          logger.debug(
+            { event: "sse_heartbeat_closed", poll_id: pollId },
+            "Heartbeat detected closed controller",
+          );
           clearInterval(heartbeat);
           if ((controller as any)._cleanup) {
             (controller as any)._cleanup();
@@ -86,7 +105,10 @@ export const GET: RequestHandler = async ({ params }) => {
     },
 
     cancel(controller) {
-      logger.info({ event: "sse_disconnected", poll_id: pollId }, "Client disconnected from results stream");
+      logger.info(
+        { event: "sse_disconnected", poll_id: pollId },
+        "Client disconnected from results stream",
+      );
       if ((controller as any)._cleanup) {
         (controller as any)._cleanup();
       }

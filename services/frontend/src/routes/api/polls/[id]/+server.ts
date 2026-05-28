@@ -19,7 +19,10 @@ export const GET: RequestHandler = async ({ params }) => {
 
     return json({ poll });
   } catch (error) {
-    logger.error({ event: "poll_fetch_failed", poll_id: params.id, error }, "Error fetching poll");
+    logger.error(
+      { event: "poll_fetch_failed", poll_id: params.id, error },
+      "Error fetching poll",
+    );
     return json({ error: "Failed to fetch poll" }, { status: 500 });
   }
 };

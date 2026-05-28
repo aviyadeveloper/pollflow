@@ -16,7 +16,10 @@ export const GET: RequestHandler = async () => {
 
       const channel = "poll:lifecycle";
 
-      logger.info({ event: "sse_lifecycle_subscribed" }, "Subscribing to poll lifecycle channel");
+      logger.info(
+        { event: "sse_lifecycle_subscribed" },
+        "Subscribing to poll lifecycle channel",
+      );
 
       // Subscribe to the lifecycle channel
       await subscriber.subscribe(channel);
@@ -41,12 +44,18 @@ export const GET: RequestHandler = async () => {
               error?.code === "ERR_INVALID_STATE" ||
               error?.message?.includes("Controller is already closed")
             ) {
-              logger.debug({ event: "sse_lifecycle_controller_closed" }, "Controller closed, cleaning up subscriber");
+              logger.debug(
+                { event: "sse_lifecycle_controller_closed" },
+                "Controller closed, cleaning up subscriber",
+              );
               if ((controller as any)._cleanup) {
                 (controller as any)._cleanup();
               }
             } else {
-              logger.error({ event: "sse_lifecycle_error", error }, "Error parsing/sending lifecycle event");
+              logger.error(
+                { event: "sse_lifecycle_error", error },
+                "Error parsing/sending lifecycle event",
+              );
             }
           }
         }
@@ -54,7 +63,10 @@ export const GET: RequestHandler = async () => {
 
       // Handle errors
       subscriber.on("error", (error: Error) => {
-        logger.error({ event: "sse_lifecycle_subscriber_error", error: error.message }, "Redis subscriber error");
+        logger.error(
+          { event: "sse_lifecycle_subscriber_error", error: error.message },
+          "Redis subscriber error",
+        );
       });
 
       // Keep connection alive with periodic heartbeat
@@ -63,7 +75,10 @@ export const GET: RequestHandler = async () => {
           controller.enqueue(encoder.encode(": heartbeat\n\n"));
         } catch (error: any) {
           // Controller closed, clean up and stop heartbeat
-          logger.debug({ event: "sse_lifecycle_heartbeat_closed" }, "Heartbeat detected closed controller");
+          logger.debug(
+            { event: "sse_lifecycle_heartbeat_closed" },
+            "Heartbeat detected closed controller",
+          );
           clearInterval(heartbeat);
           if ((controller as any)._cleanup) {
             (controller as any)._cleanup();
@@ -87,10 +102,19 @@ export const GET: RequestHandler = async () => {
     },
 
     cancel(controller) {
-      logger.info({ event: "sse_lifecycle_disconnected" }, "Client disconnected from lifecycle stream");
+      logger.info(
+        { event: "sse_lifecycle_disconnected" },
+        "Client disconnected from lifecycle stream",
+      );
       if ((controller as any)._cleanup) {
         (controller as any)._cleanup().catch((err: any) => {
-          logger.debug({ event: "sse_lifecycle_cancel_error", error: err.code || err.message }, "Error during SSE cancel");
+          logger.debug(
+            {
+              event: "sse_lifecycle_cancel_error",
+              error: err.code || err.message,
+            },
+            "Error during SSE cancel",
+          );
         });
       }
     },

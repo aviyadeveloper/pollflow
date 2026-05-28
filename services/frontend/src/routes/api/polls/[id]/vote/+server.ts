@@ -43,7 +43,10 @@ export const POST: RequestHandler = async ({
 
     return json({ success: true, message: "Vote submitted for processing" });
   } catch (error) {
-    logger.error({ event: "vote_submit_failed", poll_id: pollId, error }, "Error submitting vote");
+    logger.error(
+      { event: "vote_submit_failed", poll_id: pollId, error },
+      "Error submitting vote",
+    );
     return json({ error: "Failed to submit vote" }, { status: 500 });
   }
 };
