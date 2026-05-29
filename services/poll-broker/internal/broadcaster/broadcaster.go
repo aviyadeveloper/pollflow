@@ -101,8 +101,5 @@ func (b *Broadcaster) broadcastPollResults(ctx context.Context, pollID int) erro
 		return fmt.Errorf("failed to publish results: %w", err)
 	}
 
-	log.Printf("Broadcast results for poll %d: A=%d, B=%d, Total=%d",
-		pollID, results.OptionACount, results.OptionBCount, results.TotalVotes)
-
 	return nil
 }
