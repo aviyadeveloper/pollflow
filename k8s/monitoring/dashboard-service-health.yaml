@@ -1,0 +1,225 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pollflow-service-health-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+  annotations:
+    grafana_folder: "PollFlow"
+data:
+  pollflow-service-health.json: |
+    {
+      "annotations": {"list": []},
+      "editable": true,
+      "graphTooltip": 1,
+      "id": null,
+      "panels": [
+        {
+          "type": "stat",
+          "id": 1,
+          "title": "Poll Broker Pods Ready",
+          "gridPos": {"h": 4, "w": 4, "x": 0, "y": 0},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "options": {"colorMode": "background", "graphMode": "none", "justifyMode": "center", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+          "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}, "unit": "short"}, "overrides": []},
+          "targets": [{"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "kube_deployment_status_replicas_ready{namespace=\"default\", deployment=\"poll-broker\"}", "instant": true, "legendFormat": "", "refId": "A"}]
+        },
+        {
+          "type": "stat",
+          "id": 2,
+          "title": "Frontend Pods Ready",
+          "gridPos": {"h": 4, "w": 4, "x": 4, "y": 0},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "options": {"colorMode": "background", "graphMode": "none", "justifyMode": "center", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+          "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 1}, {"color": "green", "value": 3}]}, "unit": "short"}, "overrides": []},
+          "targets": [{"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "kube_deployment_status_replicas_ready{namespace=\"default\", deployment=\"frontend\"}", "instant": true, "legendFormat": "", "refId": "A"}]
+        },
+        {
+          "type": "stat",
+          "id": 3,
+          "title": "Pod Restarts (1h)",
+          "gridPos": {"h": 4, "w": 4, "x": 8, "y": 0},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "options": {"colorMode": "background", "graphMode": "area", "justifyMode": "center", "reduceOptions": {"calcs": ["sum"], "fields": "", "values": false}, "textMode": "auto"},
+          "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}, {"color": "red", "value": 5}]}, "unit": "short"}, "overrides": []},
+          "targets": [{"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "sum(increase(kube_pod_container_status_restarts_total{namespace=\"default\"}[1h]))", "legendFormat": "", "refId": "A"}]
+        },
+        {
+          "type": "stat",
+          "id": 4,
+          "title": "Broker Goroutines",
+          "gridPos": {"h": 4, "w": 4, "x": 12, "y": 0},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "center", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+          "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 100}, {"color": "red", "value": 500}]}, "unit": "short"}, "overrides": []},
+          "targets": [{"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "go_goroutines{pod=~\"poll-broker.*\"}", "legendFormat": "{{pod}}", "refId": "A"}]
+        },
+        {
+          "type": "stat",
+          "id": 5,
+          "title": "Event Loop Lag P99",
+          "gridPos": {"h": 4, "w": 4, "x": 16, "y": 0},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "options": {"colorMode": "background", "graphMode": "area", "justifyMode": "center", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+          "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 0.05}, {"color": "red", "value": 0.1}]}, "unit": "s"}, "overrides": []},
+          "targets": [{"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "max(nodejs_eventloop_lag_p99_seconds{pod=~\"frontend.*\"})", "legendFormat": "p99", "refId": "A"}]
+        },
+        {
+          "type": "stat",
+          "id": 6,
+          "title": "Frontend Active Handles",
+          "gridPos": {"h": 4, "w": 4, "x": 20, "y": 0},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "center", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+          "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 50}, {"color": "red", "value": 200}]}, "unit": "short"}, "overrides": []},
+          "targets": [{"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "sum(nodejs_active_handles_total{pod=~\"frontend.*\"})", "legendFormat": "", "refId": "A"}]
+        },
+        {
+          "type": "row",
+          "id": 10,
+          "title": "Poll Broker",
+          "collapsed": false,
+          "gridPos": {"h": 1, "w": 24, "x": 0, "y": 4}
+        },
+        {
+          "type": "timeseries",
+          "id": 11,
+          "title": "Goroutines",
+          "gridPos": {"h": 8, "w": 6, "x": 0, "y": 5},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"lineWidth": 2, "fillOpacity": 10}, "unit": "short"}, "overrides": []},
+          "options": {"legend": {"calcs": ["mean", "max", "last"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+          "targets": [{"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "go_goroutines{pod=~\"poll-broker.*\"}", "legendFormat": "{{pod}}", "refId": "A"}]
+        },
+        {
+          "type": "timeseries",
+          "id": 12,
+          "title": "CPU Usage",
+          "gridPos": {"h": 8, "w": 6, "x": 6, "y": 5},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"lineWidth": 2, "fillOpacity": 10}, "unit": "percentunit"}, "overrides": []},
+          "options": {"legend": {"calcs": ["mean", "max", "last"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+          "targets": [{"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "rate(process_cpu_seconds_total{pod=~\"poll-broker.*\"}[5m])", "legendFormat": "{{pod}}", "refId": "A"}]
+        },
+        {
+          "type": "timeseries",
+          "id": 13,
+          "title": "Memory",
+          "gridPos": {"h": 8, "w": 6, "x": 12, "y": 5},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"lineWidth": 2, "fillOpacity": 10}, "unit": "bytes"}, "overrides": []},
+          "options": {"legend": {"calcs": ["mean", "last"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+          "targets": [
+            {"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "process_resident_memory_bytes{pod=~\"poll-broker.*\"}", "legendFormat": "RSS {{pod}}", "refId": "A"},
+            {"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "go_memstats_heap_alloc_bytes{pod=~\"poll-broker.*\"}", "legendFormat": "Heap Alloc {{pod}}", "refId": "B"}
+          ]
+        },
+        {
+          "type": "timeseries",
+          "id": 14,
+          "title": "GC Pause Duration",
+          "gridPos": {"h": 8, "w": 6, "x": 18, "y": 5},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"lineWidth": 2, "fillOpacity": 5}, "unit": "s"}, "overrides": []},
+          "options": {"legend": {"calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+          "targets": [
+            {"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "go_gc_duration_seconds{pod=~\"poll-broker.*\", quantile=\"0.5\"}", "legendFormat": "p50 {{pod}}", "refId": "A"},
+            {"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "go_gc_duration_seconds{pod=~\"poll-broker.*\", quantile=\"0.75\"}", "legendFormat": "p75 {{pod}}", "refId": "B"},
+            {"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "go_gc_duration_seconds{pod=~\"poll-broker.*\", quantile=\"1\"}", "legendFormat": "max {{pod}}", "refId": "C"}
+          ]
+        },
+        {
+          "type": "row",
+          "id": 20,
+          "title": "Frontend (Node.js)",
+          "collapsed": false,
+          "gridPos": {"h": 1, "w": 24, "x": 0, "y": 13}
+        },
+        {
+          "type": "timeseries",
+          "id": 21,
+          "title": "CPU Usage",
+          "gridPos": {"h": 8, "w": 6, "x": 0, "y": 14},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"lineWidth": 2, "fillOpacity": 10}, "unit": "percentunit"}, "overrides": []},
+          "options": {"legend": {"calcs": ["mean", "max", "last"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+          "targets": [{"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "rate(process_cpu_seconds_total{pod=~\"frontend.*\"}[5m])", "legendFormat": "{{pod}}", "refId": "A"}]
+        },
+        {
+          "type": "timeseries",
+          "id": 22,
+          "title": "Event Loop Lag",
+          "gridPos": {"h": 8, "w": 6, "x": 6, "y": 14},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"lineWidth": 2, "fillOpacity": 5}, "unit": "s", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 0.05}, {"color": "red", "value": 0.1}]}}, "overrides": []},
+          "options": {"legend": {"calcs": ["mean", "max", "last"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+          "targets": [
+            {"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "nodejs_eventloop_lag_p50_seconds{pod=~\"frontend.*\"}", "legendFormat": "p50 {{pod}}", "refId": "A"},
+            {"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "nodejs_eventloop_lag_p90_seconds{pod=~\"frontend.*\"}", "legendFormat": "p90 {{pod}}", "refId": "B"},
+            {"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "nodejs_eventloop_lag_p99_seconds{pod=~\"frontend.*\"}", "legendFormat": "p99 {{pod}}", "refId": "C"}
+          ]
+        },
+        {
+          "type": "timeseries",
+          "id": 23,
+          "title": "Heap Memory",
+          "gridPos": {"h": 8, "w": 6, "x": 12, "y": 14},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"lineWidth": 2, "fillOpacity": 10}, "unit": "bytes"}, "overrides": []},
+          "options": {"legend": {"calcs": ["mean", "last"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+          "targets": [
+            {"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "nodejs_heap_size_used_bytes{pod=~\"frontend.*\"}", "legendFormat": "Used {{pod}}", "refId": "A"},
+            {"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "nodejs_heap_size_total_bytes{pod=~\"frontend.*\"}", "legendFormat": "Total {{pod}}", "refId": "B"}
+          ]
+        },
+        {
+          "type": "timeseries",
+          "id": 24,
+          "title": "Active Handles & Requests",
+          "gridPos": {"h": 8, "w": 6, "x": 18, "y": 14},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"lineWidth": 2, "fillOpacity": 10}}, "overrides": []},
+          "options": {"legend": {"calcs": ["mean", "last"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+          "targets": [
+            {"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "nodejs_active_handles_total{pod=~\"frontend.*\"}", "legendFormat": "Handles {{pod}}", "refId": "A"},
+            {"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "nodejs_active_requests_total{pod=~\"frontend.*\"}", "legendFormat": "Requests {{pod}}", "refId": "B"}
+          ]
+        },
+        {
+          "type": "row",
+          "id": 30,
+          "title": "Kubernetes Resources",
+          "collapsed": false,
+          "gridPos": {"h": 1, "w": 24, "x": 0, "y": 22}
+        },
+        {
+          "type": "timeseries",
+          "id": 31,
+          "title": "Container Memory (Working Set)",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 23},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"lineWidth": 2, "fillOpacity": 10}, "unit": "bytes"}, "overrides": []},
+          "options": {"legend": {"calcs": ["mean", "last"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+          "targets": [{"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "container_memory_working_set_bytes{namespace=\"default\", container=~\"poll-broker|frontend\", container!=\"\"}", "legendFormat": "{{container}} — {{pod}}", "refId": "A"}]
+        },
+        {
+          "type": "timeseries",
+          "id": 32,
+          "title": "Container CPU Usage",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 23},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"lineWidth": 2, "fillOpacity": 10}, "unit": "percentunit"}, "overrides": []},
+          "options": {"legend": {"calcs": ["mean", "last"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+          "targets": [{"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "rate(container_cpu_usage_seconds_total{namespace=\"default\", container=~\"poll-broker|frontend\", container!=\"\"}[5m])", "legendFormat": "{{container}} — {{pod}}", "refId": "A"}]
+        }
+      ],
+      "refresh": "30s",
+      "schemaVersion": 39,
+      "tags": ["pollflow", "services"],
+      "time": {"from": "now-1h", "to": "now"},
+      "timezone": "browser",
+      "title": "PollFlow Service Health",
+      "uid": "pollflow-service-health",
+      "version": 1
+    }
