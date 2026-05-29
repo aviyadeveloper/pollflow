@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"net/http"
 	"os"
 	"os/signal"
 	"sync"
@@ -15,6 +16,8 @@ import (
 	"pollflow/poll-broker/internal/poller"
 	"pollflow/poll-broker/internal/processor"
 	"pollflow/poll-broker/internal/redis"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
@@ -47,6 +50,18 @@ func main() {
 	}
 	defer redisClient.Close()
 	logger.Log.Info("Connected to Redis")
+
+	// Start Prometheus metrics server
+	metricsServer := &http.Server{
+		Addr:    ":9090",
+		Handler: promhttp.Handler(),
+	}
+	go func() {
+		logger.Log.Info("Metrics server listening on :9090")
+		if err := metricsServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			logger.Log.WithError(err).Error("Metrics server error")
+		}
+	}()
 
 	// Create components
 	pollPoller := poller.New(dbClient, redisClient, 10*time.Second)
@@ -104,6 +119,13 @@ func main() {
 		logger.Log.Info("All components stopped gracefully")
 	case <-time.After(10 * time.Second):
 		logger.Log.Warn("Shutdown timeout exceeded, forcing exit")
+	}
+
+	// Shutdown metrics server
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer shutdownCancel()
+	if err := metricsServer.Shutdown(shutdownCtx); err != nil {
+		logger.Log.WithError(err).Warn("Metrics server shutdown error")
 	}
 
 	logger.Log.Info("poll-broker service stopped")

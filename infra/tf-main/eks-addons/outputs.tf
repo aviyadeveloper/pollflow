@@ -17,3 +17,13 @@ output "external_secrets_role_arn" {
   description = "ARN of the IAM role used by External Secrets Operator"
   value       = module.external_secrets_irsa.iam_role_arn
 }
+
+output "grafana_role_arn" {
+  description = "ARN of the IAM role used by Grafana for CloudWatch access"
+  value       = module.grafana_irsa.iam_role_arn
+}
+
+output "grafana_ingress_hostname" {
+  description = "Hostname for accessing Grafana (ALB DNS)"
+  value       = try(kubernetes_ingress_v1.grafana.status[0].load_balancer[0].ingress[0].hostname, "pending")
+}

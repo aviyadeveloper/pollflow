@@ -59,10 +59,10 @@ module "eks" {
     # Main node group in private subnets
     main = {
       name           = "${var.project_name}-main"
-      instance_types = ["t3.small"]
+      instance_types = ["t3.medium"]
 
       min_size     = 1
-      max_size     = 3
+      max_size     = 5
       desired_size = 3
 
       subnet_ids = var.private_subnet_ids

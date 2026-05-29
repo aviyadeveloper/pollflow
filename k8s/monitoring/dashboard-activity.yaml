@@ -1,0 +1,142 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pollflow-activity-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+  annotations:
+    grafana_folder: "PollFlow"
+data:
+  pollflow-activity.json: |
+    {
+      "annotations": {"list": []},
+      "editable": true,
+      "graphTooltip": 1,
+      "id": null,
+      "panels": [
+        {
+          "type": "stat",
+          "id": 1,
+          "title": "Votes Recorded (1h)",
+          "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+          "datasource": {"type": "loki", "uid": "loki"},
+          "options": {"colorMode": "background", "graphMode": "area", "justifyMode": "center", "reduceOptions": {"calcs": ["sum"], "fields": "", "values": false}, "textMode": "auto"},
+          "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}]}, "unit": "short"}, "overrides": []},
+          "targets": [{"datasource": {"type": "loki", "uid": "loki"}, "expr": "sum(count_over_time({app=\"poll-broker\", namespace=\"default\"} |= `\"event\":\"vote_recorded\"` [1h]))", "refId": "A"}]
+        },
+        {
+          "type": "stat",
+          "id": 2,
+          "title": "Broadcasts Succeeded (1h)",
+          "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+          "datasource": {"type": "loki", "uid": "loki"},
+          "options": {"colorMode": "background", "graphMode": "area", "justifyMode": "center", "reduceOptions": {"calcs": ["sum"], "fields": "", "values": false}, "textMode": "auto"},
+          "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}]}, "unit": "short"}, "overrides": []},
+          "targets": [{"datasource": {"type": "loki", "uid": "loki"}, "expr": "sum(count_over_time({app=\"poll-broker\", namespace=\"default\"} |= `\"event\":\"broadcast_poll_success\"` [1h]))", "refId": "A"}]
+        },
+        {
+          "type": "stat",
+          "id": 3,
+          "title": "Polls Activated (24h)",
+          "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+          "datasource": {"type": "loki", "uid": "loki"},
+          "options": {"colorMode": "background", "graphMode": "area", "justifyMode": "center", "reduceOptions": {"calcs": ["sum"], "fields": "", "values": false}, "textMode": "auto"},
+          "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "short"}, "overrides": []},
+          "targets": [{"datasource": {"type": "loki", "uid": "loki"}, "expr": "sum(count_over_time({app=\"poll-broker\", namespace=\"default\"} |= `\"event\":\"poll_activated\"` [24h]))", "refId": "A"}]
+        },
+        {
+          "type": "stat",
+          "id": 4,
+          "title": "Polls Closed (24h)",
+          "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+          "datasource": {"type": "loki", "uid": "loki"},
+          "options": {"colorMode": "background", "graphMode": "area", "justifyMode": "center", "reduceOptions": {"calcs": ["sum"], "fields": "", "values": false}, "textMode": "auto"},
+          "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "orange", "value": null}]}, "unit": "short"}, "overrides": []},
+          "targets": [{"datasource": {"type": "loki", "uid": "loki"}, "expr": "sum(count_over_time({app=\"poll-broker\", namespace=\"default\"} |= `\"event\":\"poll_closed\"` [24h]))", "refId": "A"}]
+        },
+        {
+          "type": "stat",
+          "id": 5,
+          "title": "Lifecycle Events Published (1h)",
+          "gridPos": {"h": 4, "w": 6, "x": 0, "y": 4},
+          "datasource": {"type": "loki", "uid": "loki"},
+          "options": {"colorMode": "background", "graphMode": "area", "justifyMode": "center", "reduceOptions": {"calcs": ["sum"], "fields": "", "values": false}, "textMode": "auto"},
+          "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "purple", "value": null}]}, "unit": "short"}, "overrides": []},
+          "targets": [{"datasource": {"type": "loki", "uid": "loki"}, "expr": "sum(count_over_time({app=\"poll-broker\", namespace=\"default\"} |= `\"event\":\"lifecycle_published\"` [1h]))", "refId": "A"}]
+        },
+        {
+          "type": "stat",
+          "id": 6,
+          "title": "Frontend SSE Connections (1h)",
+          "gridPos": {"h": 4, "w": 6, "x": 6, "y": 4},
+          "datasource": {"type": "loki", "uid": "loki"},
+          "options": {"colorMode": "background", "graphMode": "area", "justifyMode": "center", "reduceOptions": {"calcs": ["sum"], "fields": "", "values": false}, "textMode": "auto"},
+          "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "teal", "value": null}]}, "unit": "short"}, "overrides": []},
+          "targets": [{"datasource": {"type": "loki", "uid": "loki"}, "expr": "sum(count_over_time({app=\"frontend\", namespace=\"default\"} |= `\"event\":\"sse_lifecycle_subscribed\"` [1h]))", "refId": "A"}]
+        },
+        {
+          "type": "stat",
+          "id": 7,
+          "title": "Broadcast Failures (1h)",
+          "gridPos": {"h": 4, "w": 6, "x": 12, "y": 4},
+          "datasource": {"type": "loki", "uid": "loki"},
+          "options": {"colorMode": "background", "graphMode": "area", "justifyMode": "center", "reduceOptions": {"calcs": ["sum"], "fields": "", "values": false}, "textMode": "auto"},
+          "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}, "unit": "short"}, "overrides": []},
+          "targets": [{"datasource": {"type": "loki", "uid": "loki"}, "expr": "sum(count_over_time({app=\"poll-broker\", namespace=\"default\"} |= `\"event\":\"broadcast_poll_failed\"` [1h]))", "refId": "A"}]
+        },
+        {
+          "type": "stat",
+          "id": 8,
+          "title": "Frontend SSE Disconnects (1h)",
+          "gridPos": {"h": 4, "w": 6, "x": 18, "y": 4},
+          "datasource": {"type": "loki", "uid": "loki"},
+          "options": {"colorMode": "background", "graphMode": "area", "justifyMode": "center", "reduceOptions": {"calcs": ["sum"], "fields": "", "values": false}, "textMode": "auto"},
+          "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "yellow", "value": null}]}, "unit": "short"}, "overrides": []},
+          "targets": [{"datasource": {"type": "loki", "uid": "loki"}, "expr": "sum(count_over_time({app=\"frontend\", namespace=\"default\"} |= `\"event\":\"sse_lifecycle_disconnected\"` [1h]))", "refId": "A"}]
+        },
+        {
+          "type": "timeseries",
+          "id": 10,
+          "title": "Vote Throughput",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+          "datasource": {"type": "loki", "uid": "loki"},
+          "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"lineWidth": 2, "fillOpacity": 15}}, "overrides": []},
+          "options": {"legend": {"displayMode": "list", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi"}},
+          "targets": [
+            {"datasource": {"type": "loki", "uid": "loki"}, "expr": "sum(rate({app=\"poll-broker\", namespace=\"default\"} |= `\"event\":\"vote_recorded\"` [5m]))", "legendFormat": "votes/s recorded", "refId": "A"},
+            {"datasource": {"type": "loki", "uid": "loki"}, "expr": "sum(rate({app=\"poll-broker\", namespace=\"default\"} |= `\"event\":\"broadcast_poll_failed\"` [5m]))", "legendFormat": "broadcast failures/s", "refId": "B"}
+          ]
+        },
+        {
+          "type": "timeseries",
+          "id": 11,
+          "title": "Poll Lifecycle Events",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+          "datasource": {"type": "loki", "uid": "loki"},
+          "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"lineWidth": 2, "fillOpacity": 15}}, "overrides": []},
+          "options": {"legend": {"displayMode": "list", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi"}},
+          "targets": [
+            {"datasource": {"type": "loki", "uid": "loki"}, "expr": "sum(rate({app=\"poll-broker\", namespace=\"default\"} |= `\"event\":\"poll_activated\"` [10m]))", "legendFormat": "polls activated/s", "refId": "A"},
+            {"datasource": {"type": "loki", "uid": "loki"}, "expr": "sum(rate({app=\"poll-broker\", namespace=\"default\"} |= `\"event\":\"poll_closed\"` [10m]))", "legendFormat": "polls closed/s", "refId": "B"}
+          ]
+        },
+        {
+          "type": "logs",
+          "id": 20,
+          "title": "Application Events Log",
+          "gridPos": {"h": 10, "w": 24, "x": 0, "y": 16},
+          "datasource": {"type": "loki", "uid": "loki"},
+          "options": {"dedupStrategy": "none", "enableLogDetails": true, "prettifyLogMessage": true, "showCommonLabels": false, "showLabels": false, "showTime": true, "sortOrder": "Descending", "wrapLogMessage": false},
+          "targets": [{"datasource": {"type": "loki", "uid": "loki"}, "expr": "{app=\"poll-broker\", namespace=\"default\"} |~ `\"event\":\"(vote_recorded|poll_activated|poll_closed|lifecycle_published|broadcast_poll_failed)\"`", "refId": "A"}]
+        }
+      ],
+      "refresh": "30s",
+      "schemaVersion": 39,
+      "tags": ["pollflow", "activity"],
+      "time": {"from": "now-3h", "to": "now"},
+      "timezone": "browser",
+      "title": "PollFlow Application Activity",
+      "uid": "pollflow-activity",
+      "version": 1
+    }
