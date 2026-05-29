@@ -80,6 +80,23 @@ output "ebs_csi_driver_version" {
   value       = module.eks_addons.ebs_csi_driver_addon_version
 }
 
+# Monitoring Outputs
+output "grafana_url" {
+  description = "URL to access Grafana dashboard (ALB)"
+  value       = "http://${module.eks_addons.grafana_ingress_hostname}"
+}
+
+output "grafana_role_arn" {
+  description = "ARN of the IAM role used by Grafana for CloudWatch access"
+  value       = module.eks_addons.grafana_role_arn
+}
+
+output "grafana_admin_password" {
+  description = "Grafana admin password (default: admin - change in production!)"
+  value       = "admin"
+  sensitive   = true
+}
+
 # RDS Outputs
 output "rds_endpoint" {
   description = "The connection endpoint for the RDS instance (host:port)"

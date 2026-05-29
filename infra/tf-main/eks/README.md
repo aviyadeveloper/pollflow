@@ -39,8 +39,8 @@ kubectl get nodes
 
 The module creates a managed node group with the following characteristics:
 
-- **Instance Type**: t3.small
-- **Capacity**: 1-3 nodes (desired: 2)
+- **Instance Type**: t3.medium
+- **Capacity**: 1-5 nodes (desired: 3)
 - **Subnet Placement**: Private subnets only
 - **AMI**: Amazon Linux 2 (AL2_x86_64)
 - **Storage**: 20 GB EBS volumes
